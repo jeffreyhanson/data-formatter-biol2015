@@ -1,16 +1,32 @@
-shinyServer(function(input,output,server) {
+bindEvent <- function(eventExpr, callback, env=parent.frame(), quoted=FALSE) {
+  eventFunc <- exprToFunction(eventExpr, env, quoted)
+  initialized <- FALSE
+  invisible(observe({
+    eventVal <- eventFunc()
+    if (!initialized)
+      initialized <<- TRUE
+    else
+      isolate(callback())
+  }))
+}
+
+shinyServer(function(input,output,session) {
 	#### initialise
 	# set working directory
+	setwd(main_DIR)
 	init_dir_FUN()
 	manager=MANAGER$new()
-	toc=createToc(session, "toc")
+	listwidget=createList(session, "widget")
 
 	# set initial values
-	output$is_data_loaded=FALSE
-	updateSelectInput("week_number_CHR", choices=week_numbers_VCHR)
-	updateSelectInput("project_name_CHR", choices=project_names_VCHR)
-	updateSelectInput("group_color_CHR", choices=group_colours_VCHR)
-	session$sendCustomMessage("setWidgetProperty",list(id="group_name_VCHR",prop="disabled", status=TRUE))
+	blankPageUI=div()
+	dataUI=div(dataTableOutput("data"))
+	output$mainpanelUI=renderUI({blankPageUI})
+	
+	output$sidebartype=renderText({'load_data_panel'})
+	session$sendCustomMessage('evalText', list(text="var sidebartype='load_data_panel';"))
+	session$sendCustomMessage("setWidgetProperty",list(id="group_names_VCHR",prop="disabled", status=TRUE))
+	session$sendCustomMessage("setWidgetProperty",list(id="load_data_BTN",prop="disabled", status=TRUE))
 	
 	#### reactive handlers
 	## set manager fields
@@ -19,14 +35,12 @@ shinyServer(function(input,output,server) {
 			return()
 		isolate({
 			manager$setActiveWeekNumber_CHR(input$week_number_CHR)
-			output$is_data_loaded=FALSE
 			if (manager$isDirFieldsValid()) {
 				manager$loadProjectDataFromFile()
-				updateSelectInput("group_name_VCHR", choices=manager$getProjectGroupNames())
-				session$sendCustomMessage("setWidgetProperty",list(id="group_name_VCHR",prop="disabled", status=FALSE))
+				updateSelectInput("group_names_VCHR", choices=manager$getProjectGroupNames())
+				session$sendCustomMessage("setWidgetProperty",list(id="group_names_VCHR",prop="disabled", status=FALSE))
 			} else {
-				updateSelectInput("group_name_VCHR", choices=c(""))
-				session$sendCustomMessage("setWidgetProperty",list(id="group_name_VCHR",prop="disabled", status=TRUE))
+				session$sendCustomMessage("setWidgetProperty",list(id="group_names_VCHR",prop="disabled", status=TRUE))
 			}
 		})
 	})
@@ -35,14 +49,12 @@ shinyServer(function(input,output,server) {
 			return()			
 		isolate({
 			manager$setActiveProjectName(input$project_name_CHR)
-			output$is_data_loaded=FALSE
 			if (manager$isDirFieldsValid()) {
 				manager$loadProjectDataFromFile()
-				updateSelectInput("group_name_VCHR", choices=manager$getProjectGroupNames())
-				session$sendCustomMessage("setWidgetProperty",list(id="group_name_VCHR",prop="disabled", status=FALSE))
+				updateSelectInput("group_names_VCHR", choices=manager$getProjectGroupNames())
+				session$sendCustomMessage("setWidgetProperty",list(id="group_names_VCHR",prop="disabled", status=FALSE))
 			} else {
-				updateSelectInput("group_name_VCHR", choices=c(""))
-				session$sendCustomMessage("setWidgetProperty",list(id="group_name_VCHR",prop="disabled", status=TRUE))
+				session$sendCustomMessage("setWidgetProperty",list(id="group_names_VCHR",prop="disabled", status=TRUE))
 			}
 		})
 	})
@@ -51,84 +63,105 @@ shinyServer(function(input,output,server) {
 			return()
 		isolate({
 			manager$setActiveGroupColor(input$group_color_CHR)
-			output$is_data_loaded=FALSE
 			if (manager$isDirFieldsValid()) {
 				manager$loadProjectDataFromFile()
-				updateSelectInput("group_name_VCHR", choices=manager$getProjectGroupNames())
-				session$sendCustomMessage("setWidgetProperty",list(id="group_name_VCHR",prop="disabled", status=FALSE))
+				updateSelectInput(session,"group_names_VCHR", choices=manager$getProjectGroupNames())
+				session$sendCustomMessage("setWidgetProperty",list(id="group_names_VCHR",prop="disabled", status=FALSE))
 			} else {
-				updateSelectInput("group_name_VCHR", choices=c(""))
-				session$sendCustomMessage("setWidgetProperty",list(id="group_name_VCHR",prop="disabled", status=TRUE))
+				session$sendCustomMessage("setWidgetProperty",list(id="group_names_VCHR",prop="disabled", status=TRUE))
 			}
 		})
 	})
 	
+	
+	## make load button active/inactive
+	observe({
+		if(is.empty(input$group_names_VCHR)) {
+			isolate({
+				session$sendCustomMessage("setWidgetProperty",list(id="load_data_BTN",prop="disabled", status=TRUE))
+			})
+		}
+	})
+	observe({
+		if(!is.empty(input$group_names_VCHR)) {
+			isolate({
+				session$sendCustomMessage("setWidgetProperty",list(id="load_data_BTN",prop="disabled", status=FALSE))
+			})
+		}
+	})
+			
 	## load data
 	observe({
-		if(is.empty(input$group_names_VCHR))
+		if(is.null(input$load_data_BTN) || input$load_data_BTN==0)
 			return()
 		isolate({
 			manager$setActiveGroupNames(input$group_names_VCHR)
-			output$is_data_loaded=FALSE
 			if (manager$isAllFieldsValid()) {
-				output$is_data_loaded=TRUE
 				# set active data
 				manager$setActiveData()
 				# scan data for errors
 				manager$scanDataForErrors()
 				# add errors to widget
 				for (i in seq_along(manager$.errors)) {
-					toc$addItem(manager$.errors[[i]]$.id, manager$.errors[[i]]$repr(), manager$.errors[[i]]$.status, FALSE)
+					listwidget$addItem(manager$.errors[[i]]$.id, manager$.errors[[i]]$repr(), manager$.errors[[i]]$.status, FALSE)
 				}
-				toc$reloadView()
+				listwidget$reloadView()
+				# show data
+				tmp=manager$getActiveGroupsData()
+				output$data=renderDataTable({tmp$data})
+				session$sendCustomMessage("colorCells",list(row=tmp$row,col=tmp$col,color=tmp$color))
+				output$mainpanelUI=renderUI({dataUI})
+				# change sidebar
+				output$sidebartype=renderText({'error_list_panel'})
 			}
 		})
+		
 	})
 		
 	## zoom item
 	observe({
-		if(is.null(toc$zoomItem))
+		if (is.null(input$zoomItem))
 			return()
 		isolate({
-			tmp=toc$getRowWithSpecificError(toc$zoomItem$id)
-			session$sendCustomMessage("highlightRow",list(row=tmp$row,color=tmp$color))
+			tmp=manager$getDataWithSpecificError(input$zoomItem$id)
+			output$data=renderDataTable({tmp$data})			
+			session$sendCustomMessage("highlightRow",list(row=tmp$row,col=tmp$col,color=tmp$color))
 		})
 	})
 	
 	## set view
 	observe({
-		if(is.null(toc$viewBtnsGroup))
+		if (is.null(input$listStatus))
 			return()
 		isolate({
-			switch(viewBtnsGroup,
-				"all"={tmp=toc$getActiveGroupsData()},
-				"fixed"={tmp=toc$getAllDataWithFixedErrorsInActiveGroups()},
-				"ignored"={tmp=toc$getAllDataWithIgnoredErrorsInActiveGroups()},
-				"errors"={tmp=toc$getAllDataWithErrorsInActiveGroups()}
-			)
-			output$renderDataTable({tmp$data})
+			tmp=manager$getActiveGroupsData(input$listStatus$view)
+			output$data=renderDataTable({tmp$data})
 			session$sendCustomMessage("colorCells",list(row=tmp$row,col=tmp$col,color=tmp$color))
+			listwidget$setView(input$listStatus$view,TRUE)
 		})
 	})
 	
 	## swap ignore status
 	observe({
-		if(is.null(toc$swapIgnoreItem))
+		if (is.null(input$swapIgnoreItem))
 			return()
 		isolate({
-			manager$.errors[[toc$swapIgnoreItem$id]].swapIgnore()
-			toc$updateItem(toc$swapIgnoreItem$id, item=manager$.errors[[toc$swapIgnoreItem$id]].repr())
+			if (manager$.errors[[input$swapIgnoreItem$id]]$.status=='error' || manager$.errors[[input$swapIgnoreItem$id]]$.status=='ignored') {
+				manager$.errors[[input$swapIgnoreItem$id]]$swapIgnore()
+				listwidget$updateItem(input$swapIgnoreItem$id, manager$.errors[[input$swapIgnoreItem$id]]$repr(), manager$.errors[[input$swapIgnoreItem$id]]$.status, TRUE)
+				if (manager$.activeView=="ignored" || manager$.activeView=="error")
+					listwidget$reloadView()
+			}
 		})
 	})
 
 	## save data
 	observe({
-		if(submit_data_BTN==0)
+		if (is.null(input$submit_data_BTN) || input$submit_data_BTN==0)
 			return()
 		isolate({
 			manager$saveDataToFile()
 		})
 	})
-
 })
 

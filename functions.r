@@ -1,12 +1,11 @@
 ### File system interface functions
-make_dir_FUN=function(dir_CHR)=function() {
+make_dir_FUN=function(dir_CHR) {
 	if (!file.exists(dir_CHR))
-		dir.create(dir_chr,recursive=TRUE)
+		dir.create(dir_CHR,recursive=TRUE)
 }
 
-init_dir_FUN=function(dir_CHR) {
-	make_dir_FUN(dir_CHR)
-	sapply(apply(expand.grid(week_numbers_VCHR,project_names_VCHR,group_colors_VCHR,c("raw","clean","formatted","compiled")),1,paste,collapse="/"), make_dir)
+init_dir_FUN=function() {
+	sapply(apply(expand.grid(week_numbers_VCHR,project_names_VCHR,group_colors_VCHR,c("raw","clean","formatted","compiled")),1,paste,collapse="/"), make_dir_FUN)
 }
 
 ### Miscellaneous functions
@@ -21,6 +20,10 @@ convert2bool=function(x) {
 }
 
 phrase_FUN=function(x, last_word="or") {
-	x=paste0('"',values,'"') 
-	return(paste0(paste(x[seq_len(length(x)-1)], collapse=","), ", ", last_word, " ", x[length(x)]))
+	x=paste0('"',x,'"')
+	return(paste0(paste(x[seq_len(length(x)-1)], collapse=", "), ", ", last_word, " ", x[length(x)]))
+}
+
+is.outlier=function(x) {
+	return(2<abs((x-mean(x,na.rm=TRUE))/sd(x,na.rm=TRUE)))
 }
