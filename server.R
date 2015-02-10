@@ -16,13 +16,10 @@ shinyServer(function(input,output,session) {
 	setwd(main_DIR)
 	init_dir_FUN()
 	manager=MANAGER$new()
-	listwidget=createList(session, "widget")
+	listwidget=createList(session, "list_widget")
+	dtwidget=createDataTable(session, "dt_widget")
 
 	# set initial values
-	blankPageUI=div()
-	dataUI=div(dataTableOutput("data"))
-	output$mainpanelUI=renderUI({blankPageUI})
-	
 	output$sidebartype=renderText({'load_data_panel'})
 	session$sendCustomMessage('evalText', list(text="var sidebartype='load_data_panel';"))
 	session$sendCustomMessage("setWidgetProperty",list(id="group_names_VCHR",prop="disabled", status=TRUE))
@@ -108,8 +105,9 @@ shinyServer(function(input,output,session) {
 				listwidget$reloadView()
 				# show data
 				tmp=manager$getActiveGroupsData()
-				output$data=renderDataTable({tmp$data})
-				session$sendCustomMessage("colorCells",list(row=tmp$row,col=tmp$col,color=tmp$color))
+				dtwidget$renderDataTable(tmp$data)
+				for (i in seq_along(tmp$row))
+					dtwidget$highlightCell(row=tmp$row[i],col=tmp$col[i],color=tmp$color[i]))
 				output$mainpanelUI=renderUI({dataUI})
 				# change sidebar
 				output$sidebartype=renderText({'error_list_panel'})
@@ -123,9 +121,13 @@ shinyServer(function(input,output,session) {
 		if (is.null(input$zoomItem))
 			return()
 		isolate({
+			# init
 			tmp=manager$getDataWithSpecificError(input$zoomItem$id)
-			output$data=renderDataTable({tmp$data})
-			session$sendCustomMessage("highlightRow",list(row=tmp$row,col=tmp$col,color=tmp$color))
+			# data table widget
+			dtwidget$filter(tmp$row)
+			dtwidget$highlight(row=tmp$row,col=tmp$col,color=tmp$color)
+			# list widget
+
 		})
 	})
 	
@@ -134,9 +136,12 @@ shinyServer(function(input,output,session) {
 		if (is.null(input$listStatus))
 			return()
 		isolate({
+			# init
 			tmp=manager$getActiveGroupsData(input$listStatus$view)
-			output$data=renderDataTable({tmp$data})
-			session$sendCustomMessage("colorCells",list(row=tmp$row,col=tmp$col,color=tmp$color))
+			# data table widget
+			dtwidget$filter(tmp$row)
+				dtwidget$highlight(row=tmp$row[i],col=tmp$col[i],color=tmp$color[i])
+			# list widget
 			listwidget$setView(input$listStatus$view,TRUE)
 		})
 	})

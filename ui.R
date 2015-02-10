@@ -57,6 +57,7 @@ shinyUI(fluidPage(
 		"),
 		tags$script(src="https://rubaxa.github.io/Sortable/Sortable.js"),
 		tags$script(src="deps/list/bindings.js"),
+		tags$script(src="deps/datatable/bindings.js"),
 		tags$script(
 			HTML('
 				Shiny.addCustomMessageHandler("setWidgetProperty",
@@ -117,7 +118,7 @@ shinyUI(fluidPage(
 			conditionalPanel(
 				condition="output.sidebartype == 'error_list_panel'",
 				div(
-					ListHtmlRepr("widget"),
+					ListHtmlRepr("list_widget"),
 					br(),
 					bsButton("scan_data_BTN", icon("search"), style="primary"),
 					bsButton("submit_data_BTN", icon("cloud-upload"), style="primary")
@@ -125,7 +126,18 @@ shinyUI(fluidPage(
 			)
 		),
 		mainPanel(
-			uiOutput("mainpanelUI")
+			conditionalPanel(
+				condition="output.sidebartype == 'load_data_panel'",
+				div(
+					br()
+				)
+			),
+			conditionalPanel(
+				condition="output.sidebartype == 'error_list_panel'",
+				div(
+					DataTableHtmlRepr("dt_widget")
+				)
+			)
 		)
 	)
 ))
