@@ -124,7 +124,7 @@ shinyServer(function(input,output,session) {
 			return()
 		isolate({
 			tmp=manager$getDataWithSpecificError(input$zoomItem$id)
-			output$data=renderDataTable({tmp$data})			
+			output$data=renderDataTable({tmp$data})
 			session$sendCustomMessage("highlightRow",list(row=tmp$row,col=tmp$col,color=tmp$color))
 		})
 	})
