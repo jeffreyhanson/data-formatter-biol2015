@@ -2,6 +2,7 @@ shinyUI(fluidPage(
 	tags$head(
 		tags$link(rel="stylesheet", type="text/css", href="deps/list/style.css"),
 		tags$link(rel="stylesheet", type="text/css", href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css"),
+		tags$link(rel="stylesheet", type="text/css", href="deps/datatable/DataTables-1.10.5/media/css/jquery.dataTables.css"),
 		tags$style("
 
 			.list-container {
@@ -54,8 +55,54 @@ shinyUI(fluidPage(
 				margin-bottom: 2%;
 			}
 		
-		"),
+		")
+	),
+	tags$body(
+		sidebarLayout(
+			sidebarPanel(
+				h4("Data Error Checker"),
+				div(style="visibility:hidden",h3(textOutput('sidebartype'))),
+				conditionalPanel(
+					condition="output.sidebartype == 'load_data_panel'",
+					div(
+						selectInput("week_number_CHR", "Week Number:", choices=week_numbers_VCHR, selected="week 1"),
+						selectInput("project_name_CHR", "Project:", choices=project_names_VCHR, selected="mangrove herbivory"),
+						selectInput("group_color_CHR", "Group Colour:", choices=group_colors_VCHR, selected="blue"),
+						selectInput("group_names_VCHR", "Group Name:", choices=c(""), multiple=TRUE, selectize=TRUE),
+						br(),
+						bsButton("load_data_BTN", "Load Data", style="primary")
+					)
+				),
+				conditionalPanel(
+					condition="output.sidebartype == 'error_list_panel'",
+					div(
+						ListHtmlRepr("list_widget"),
+						br(),
+						bsButton("scan_data_BTN", icon("search"), style="primary"),
+						bsButton("submit_data_BTN", icon("cloud-upload"), style="primary")
+					)
+				)
+			),
+			mainPanel(
+				conditionalPanel(
+					condition="output.sidebartype == 'load_data_panel'",
+					div(
+						br()
+					)
+				),
+				conditionalPanel(
+					condition="output.sidebartype == 'error_list_panel'",
+					div(
+						DataTableHtmlRepr("dt_widget")
+					)
+				)
+			)
+		)
+	),
+	tags$foot(
 		tags$script(src="https://rubaxa.github.io/Sortable/Sortable.js"),
+		tags$script(src="deps/datatable/DataTables-1.10.5/media/js/jquery.js"),
+		tags$script(src="deps/datatable/DataTables-1.10.5/media/js/jquery.dataTables.js"),
 		tags$script(src="deps/list/bindings.js"),
 		tags$script(src="deps/datatable/bindings.js"),
 		tags$script(
@@ -97,47 +144,6 @@ shinyUI(fluidPage(
 				}
 				
 			')
-		)
-	),
-	
-	sidebarLayout(
-		sidebarPanel(
-			h4("Data Error Checker"),
-			div(style="visibility:hidden",h3(textOutput('sidebartype'))),
-			conditionalPanel(
-				condition="output.sidebartype == 'load_data_panel'",
-				div(
-					selectInput("week_number_CHR", "Week Number:", choices=week_numbers_VCHR, selected="week 1"),
-					selectInput("project_name_CHR", "Project:", choices=project_names_VCHR, selected="mangrove herbivory"),
-					selectInput("group_color_CHR", "Group Colour:", choices=group_colors_VCHR, selected="blue"),
-					selectInput("group_names_VCHR", "Group Name:", choices=c(""), multiple=TRUE, selectize=TRUE),
-					br(),
-					bsButton("load_data_BTN", "Load Data", style="primary")
-				)
-			),
-			conditionalPanel(
-				condition="output.sidebartype == 'error_list_panel'",
-				div(
-					ListHtmlRepr("list_widget"),
-					br(),
-					bsButton("scan_data_BTN", icon("search"), style="primary"),
-					bsButton("submit_data_BTN", icon("cloud-upload"), style="primary")
-				)
-			)
-		),
-		mainPanel(
-			conditionalPanel(
-				condition="output.sidebartype == 'load_data_panel'",
-				div(
-					br()
-				)
-			),
-			conditionalPanel(
-				condition="output.sidebartype == 'error_list_panel'",
-				div(
-					DataTableHtmlRepr("dt_widget")
-				)
-			)
 		)
 	)
 ))

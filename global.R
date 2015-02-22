@@ -28,6 +28,7 @@ highlightColor="#fbff00" # bright yellow
 source("classes.R")
 source("functions.R")
 source("list.R")
+source("datatable.R")
 
 ## make id class
 id=ID$new()

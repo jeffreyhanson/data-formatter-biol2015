@@ -105,9 +105,9 @@ shinyServer(function(input,output,session) {
 				listwidget$reloadView()
 				# show data
 				tmp=manager$getActiveGroupsData()
-				dtwidget$renderDataTable(tmp$data)
+				dtwidget$render(tmp$data)
 				for (i in seq_along(tmp$row))
-					dtwidget$highlightCell(row=tmp$row[i],col=tmp$col[i],color=tmp$color[i]))
+					dtwidget$highlight(row=tmp$row[i],col=tmp$col[i],color=tmp$color[i])
 				output$mainpanelUI=renderUI({dataUI})
 				# change sidebar
 				output$sidebartype=renderText({'error_list_panel'})
@@ -126,8 +126,6 @@ shinyServer(function(input,output,session) {
 			# data table widget
 			dtwidget$filter(tmp$row)
 			dtwidget$highlight(row=tmp$row,col=tmp$col,color=tmp$color)
-			# list widget
-
 		})
 	})
 	
