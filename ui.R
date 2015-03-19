@@ -111,7 +111,7 @@ shinyUI(fluidPage(
 					selectInput("group_color_CHR", "Group Colour:", choices=group_colors_VCHR, selected="blue"),
 					selectInput("group_names_VCHR", "Group Name:", choices=c(""), multiple=TRUE, selectize=TRUE),
 					br(),
-					bsButton("load_data_BTN", "Load Data", style="primary")
+					bsActionButton("load_data_BTN", "Load Data", style="primary")
 				)
 			),
 			conditionalPanel(
@@ -119,8 +119,8 @@ shinyUI(fluidPage(
 				div(
 					ListHtmlRepr("widget"),
 					br(),
-					bsButton("scan_data_BTN", icon("search"), style="primary"),
-					bsButton("submit_data_BTN", icon("cloud-upload"), style="primary")
+					bsActionButton("scan_data_BTN", icon("search"), style="primary"),
+					bsActionButton("submit_data_BTN", icon("cloud-upload"), style="primary")
 				)
 			)
 		),

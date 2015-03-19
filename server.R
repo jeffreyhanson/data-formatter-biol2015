@@ -95,24 +95,33 @@ shinyServer(function(input,output,session) {
 		if(is.null(input$load_data_BTN) || input$load_data_BTN==0)
 			return()
 		isolate({
-			manager$setActiveGroupNames(input$group_names_VCHR)
+			manager$setActiveGroupNames(input$group_names_VCHR)			
 			if (manager$isAllFieldsValid()) {
 				# set active data
+				print(1)
 				manager$setActiveData()
-				# scan data for errors
+				# scan data for verrors
+				print(2)
 				manager$scanDataForErrors()
 				# add errors to widget
-				for (i in seq_along(manager$.errors)) {
-					listwidget$addItem(manager$.errors[[i]]$.id, manager$.errors[[i]]$repr(), manager$.errors[[i]]$.status, FALSE)
+				print(3)
+				for (i in seq_along(manager$.errors_LST)) {
+					listwidget$addItem(manager$.errors_LST[[i]]$.id_CHR, manager$.errors_LST[[i]]$repr(), manager$.errors_LST[[i]]$.status_CHR, FALSE)
 				}
 				listwidget$reloadView()
 				# show data
+				print(4)
 				tmp=manager$getActiveGroupsData()
+				print(4.1)
 				output$data=renderDataTable({tmp$data})
+				print(4.2)
 				session$sendCustomMessage("colorCells",list(row=tmp$row,col=tmp$col,color=tmp$color))
+				print(4.3)
 				output$mainpanelUI=renderUI({dataUI})
+				print(5)
 				# change sidebar
 				output$sidebartype=renderText({'error_list_panel'})
+				print(6)
 			}
 		})
 		
@@ -134,10 +143,15 @@ shinyServer(function(input,output,session) {
 		if (is.null(input$listStatus))
 			return()
 		isolate({
+			print(11)
 			tmp=manager$getActiveGroupsData(input$listStatus$view)
+			print(12)
 			output$data=renderDataTable({tmp$data})
+			print(13)
 			session$sendCustomMessage("colorCells",list(row=tmp$row,col=tmp$col,color=tmp$color))
+			print(14)
 			listwidget$setView(input$listStatus$view,TRUE)
+			print(15)
 		})
 	})
 	
@@ -146,10 +160,10 @@ shinyServer(function(input,output,session) {
 		if (is.null(input$swapIgnoreItem))
 			return()
 		isolate({
-			if (manager$.errors[[input$swapIgnoreItem$id]]$.status=='error' || manager$.errors[[input$swapIgnoreItem$id]]$.status=='ignored') {
-				manager$.errors[[input$swapIgnoreItem$id]]$swapIgnore()
-				listwidget$updateItem(input$swapIgnoreItem$id, manager$.errors[[input$swapIgnoreItem$id]]$repr(), manager$.errors[[input$swapIgnoreItem$id]]$.status, TRUE)
-				if (manager$.activeView=="ignored" || manager$.activeView=="error")
+			if (manager$.errors_LST[[input$swapIgnoreItem$id]]$.status_CHR=='error' || manager$.errors_LST[[input$swapIgnoreItem$id]]$.status_CHR=='ignored') {
+				manager$.errors_LST[[input$swapIgnoreItem$id]]$swapIgnore()
+				listwidget$updateItem(input$swapIgnoreItem$id, manager$.errors_LST[[input$swapIgnoreItem$id]]$repr(), manager$.errors_LST[[input$swapIgnoreItem$id]]$.status_CHR, TRUE)
+				if (manager$.activeView_CHR=="ignored" || manager$.activeView_CHR=="error")
 					listwidget$reloadView()
 			}
 		})

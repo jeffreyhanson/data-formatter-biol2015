@@ -50,15 +50,15 @@ MANAGER=setRefClass("MANAGER",
 		.fullProjectData_DF="data.table",
 		.activeGroupData_DF="data.table",
 		.dataPrep="DATA_PREP",
-		.activeView="character",
+		.activeView_CHR="character",
 		.activeViewData_DF="data.table",
 		
-		.errors="list"
+		.errors_LST="list"
 	),
 	methods=list(
 		#### initialize methods
 		initialize=function() {
-			.activeView<<-"all"
+			.activeView_CHR<<-"all"
 			.activeWeekNumber_CHR<<-character(0)
 			.activeProjectName_CHR<<-character(0)
 			.activeGroupColor_CHR<<-character(0)
@@ -114,11 +114,11 @@ MANAGER=setRefClass("MANAGER",
 		scanDataForErrors=function() {
 			tempErrors=.dataPrep$scanForErrors(.activeGroupData_DF) %>% unlist(recursive=TRUE, use.names=FALSE)
 			if (length(tempErrors)>0) {
-				.errors[laply(tempErrors, function(x){return(x$.id)})]<<-tempErrors
+				.errors_LST[laply(tempErrors, function(x){return(x$.id_CHR)})]<<-tempErrors
 			}
 		},
 		setErrorStatus=function(id, status) {
-			.errors[[id]]$.status<<-status
+			.errors_LST[[id]]$.status_CHR<<-status
 		},
 
 		#### render data table methods
@@ -126,29 +126,30 @@ MANAGER=setRefClass("MANAGER",
 			return(list(data=.fullProjectData_DF, row=numeric(0), col=numeric(0)))
 		},
 		getActiveGroupsData=function(status="all") {
-			.activeView<<-status
+			.activeView_CHR<<-status
 			if (status=='all') {
-				ind=seq_along(.errors)
+				ind=seq_along(.errors_LST)
 				.activeViewData_DF<<-.activeGroupData_DF
 			} else {
-				ind=which(laply(.errors, "[[", ".status")==status)
-				.activeViewData_DF<<-.activeGroupData_DF[laply(.errors[ind], "[[", ".row"),]
+				ind=which(laply(.errors_LST, "[[", ".status_CHR")==status)
+				.activeViewData_DF<<-.activeGroupData_DF[laply(.errors_LST[ind], "[[", ".row_INT"),]
 			}
+						
 			return(list(
 				data=data.frame(.activeViewData_DF),
-				row=laply(.errors[ind], "[[", ".row"),
-				col=laply(.errors[ind], "[[", ".col"),
-				color=laply(.errors[ind], function(x) x$color())
+				row=laply(.errors_LST[ind], "[[", ".row_INT"),
+				col=laply(.errors_LST[ind], "[[", ".col_INT"),
+				color=laply(.errors_LST[ind], function(x) x$color())
 			))
 		},
 		getDataWithSpecificError=function(id) {
-			.activeView<<-'all'
-			.activeViewData_DF<<-.activeGroupData_DF[.errors[[id]]$.row,]
+			.activeView_CHR<<-'all'
+			.activeViewData_DF<<-.activeGroupData_DF[.errors_LST[[id]]$.row,]
 			return(list(
 				data=data.frame(.activeViewData_DF),
-				row=.errors[[id]]$.row,
-				col=.errors[[id]]$.col,
-				color=.errors[[id]]$color()
+				row=.errors_LST[[id]]$.row,
+				col=.errors_LST[[id]]$.col,
+				color=.errors_LST[[id]]$color()
 			))
 		}
 	)
@@ -156,58 +157,58 @@ MANAGER=setRefClass("MANAGER",
 
 ERROR=setRefClass("ERROR",
 	fields=list(
-		.id="character",
-		.status="character",
-		.row="integer",
-		.col="integer",
-		.name="character",
-		.description="character",
-		.test="function"
+		.id_CHR="character",
+		.status_CHR="character",
+		.row_INT="integer",
+		.col_INT="integer",
+		.name_CHR="character",
+		.description_CHR="character",
+		.test_FUN="function"
 	),
 	methods=list(
 		initialize=function(id, name, i, j, description, test) {
-			.id<<-id
-			.name<<-name
-			.status<<-"error"
-			.row<<-i
-			.col<<-j
-			.description<<-description
-			.test<<-test
+			.id_CHR<<-id
+			.name_CHR<<-name
+			.status_CHR<<-"error"
+			.row_INT<<-i
+			.col_INT<<-j
+			.description_CHR<<-description
+			.test_FUN<<-test
 		},
 		test=function(inpDF) {
-			if(nrow(.test(inpDF))==0) {
-				.status<<-"fixed"
+			if(nrow(.test_FUN(inpDF))==0) {
+				.status_CHR<<-"fixed"
 			} else {
-				.status<<-"error"
+				.status_CHR<<-"error"
 			}
 		},
 		isValid=function() {
-			return(.status=="fixed")
+			return(.status_CHR=="fixed")
 		},
 		swapIgnore=function() {
-			if (.status=='error') {
-				.status<<-'ignored'
-			} else if (.status=='ignored') {
-				.status<<-'error'
+			if (.status_CHR=='error') {
+				.status_CHR<<-'ignored'
+			} else if (.status_CHR=='ignored') {
+				.status_CHR<<-'error'
 			}
 		},
 		repr=function() {
 			return(paste0('
-			<div class="list-container status-',.status,'">
+			<div class="list-container status-',.status_CHR,'">
 				<div class="row">
-					<h5 class="list-element-label">(',.id,')  ',.name,'</h5>
-					<button class="btn btn-default action-button list-element-zoom" id="',.id,'_zoom_btn" name="',.id,'" type="button" onclick="zoomItem(this.name)">
+					<h5 class="list-element-label">(',.id_CHR,')  ',.name_CHR,'</h5>
+					<button class="btn btn-default action-button list-element-zoom" id="',.id_CHR,'_zoom_btn" name="',.id_CHR,'" type="button" onclick="zoomItem(this.name)">
 						<i class="fa fa-search-plus"></i>
 					</button>
-					<button class="btn btn-default action-button list-element-swapignore" id="',.id,'_swap_btn" name="',.id,'" type="button" onclick="swapIgnoreItem(this.name)">
-						<i class="',ifelse(.status=='ignored' || .status=='fixed','fa fa-check-square-o','fa fa-square-o'),'"></i>
+					<button class="btn btn-default action-button list-element-swapignore" id="',.id_CHR,'_swap_btn" name="',.id_CHR,'" type="button" onclick="swapIgnoreItem(this.name)">
+						<i class="',ifelse(.status_CHR=='ignored' || .status_CHR=='fixed','fa fa-check-square-o','fa fa-square-o'),'"></i>
 					</button>
 				</div>
 			</div>
 			'))
 		},
 		color=function() {
-			return(c(ignored=ignoreColor, fixed=fixedColor, error=errorColor)[.status])
+			return(c(ignored=ignoreColor, fixed=fixedColor, error=errorColor)[.status_CHR])
 		}
 	)
 )
@@ -215,20 +216,20 @@ ERROR=setRefClass("ERROR",
 ERROR_GENERATOR=setRefClass("ERROR_GENERATOR",
 	fields=list(
 		.id="ID",
-		.name="character",
-		.description="character",
-		.test="function"
+		.name_CHR="character",
+		.description_CHR="character",
+		.test_FUN="function"
 	),
 	methods=list(
 		initialize=function(id, name, description, test) {
 			.id<<-id
-			.name<<-name
-			.description<<-description
-			.test<<-test
+			.name_CHR<<-name
+			.description_CHR<<-description
+			.test_FUN<<-test
 		},
 		testForErrors=function(inpDF) {
-			return(alply(.test(inpDF),1, function(x) {
-				return(ERROR$new(.id$new(), .name, x[[1]], x[[2]], .description, .test))
+			return(alply(.test_FUN(inpDF),1, function(x) {
+				return(ERROR$new(.id$new(), .name_CHR, x[[1]], x[[2]], .description_CHR, .test_FUN))
 			}))
 		}
 	)
@@ -306,6 +307,6 @@ ERROR_TEMPLATE.OUTLIER=function(column_name) {
 
 error_list_to_matrix=function(errorLST) {
 	return(laply(errorLST, function(x) {
-		return(c(x$.row, x$.col, x$color(), x$.status))
+		return(c(x$.row_INT, x$.col_INT, x$color(), x$.status_CHR))
 	}))
 }
