@@ -1,6 +1,7 @@
 (function() {
 	// global vars
 	var datatables={};
+	var ids=[];
 	
 	// create Shiny output binding
 	var datatableOutputBinding=new Shiny.OutputBinding();
@@ -21,32 +22,10 @@
 				);
 				
 				datatable.table=document.getElementById(datatable.id);
-				datatable.head=document.createElement("thead");
-				datatable.body=document.createElement("tbody");
-				datatable.foot=document.createElement("tfoot");
-				
-				datatable.table.innerHTML=datatable.head;
-				datatable.table.innerHTML+=datatable.body;
-				datatable.table.innerHTML+=datatable.foot;
 				
 				// initialise fields
 				datatables[datatable.id]=datatable;
-				
-				console.log('id');
-				console.log(datatable.id);
-
-				console.log('table');
-				console.log(datatable.table);
-
-				console.log('head');
-				console.log(datatable.head);
-
-				console.log('body');
-				console.log(datatable.body);
-
-				console.log('foot');
-				console.log(datatable.foot);
-				
+				ids.push(datatable.id);
 			}
 		}
 	});
@@ -67,68 +46,119 @@
 	
 	// define methods
 	methods.render=function(data) {
-		// reset
-		this.head.innerHTML='';
-		this.foot.innerHTML='';
-		this.body.innerHTML='';
-		
-		// load data
-		var tmp_html;
-		var tmp2_html;
-		for (i in data) {
+		// prepare datatable objects
+		// cell values
+		var dataSet=[];
+		var tmp=[];
+		for (i=0; i<data[Object.keys(data)[0]].length; i++) {
 			// init
-			tmp_html=document.createElement("tr");
-			tmp_html2=document.createElement("th");
-			tmp_html2.innerHTML=i;
-			tmp_html.innerHTML+=tmp2_html;
-			// head
-			this.head.innerHTML+=tmp_html;
-			// foot
-			this.foot.innerHTML+=tmp_html;
+			tmp=[];
+			// add column data
+			for (j in data)
+				tmp.push(data[j][i]);
+			// store array
+			dataSet.push(tmp);
 		}
-		for (j=0; j<data[Object.keys(data)[0]].length; j++) {
-			// init
-			tmp_html=document.createElement("tr");
-			// add row
-			for (i in data) {
-				tmp2_html=document.createElement("td");
-				tmp2_html.innerHTML=data[i][j];
-				tmp_html.innerHTML+=tmp2_html;
-			}
-			this.body.innerHTML+=tmp_html;
+		// column names
+		var colnames=[];
+		for (j in data) {
+			colnames.push({'title': j.replace(/\./g, ' ')});
 		}
+		colnames[0]='';
 		
+		// set datatable filters
+		this.activeRows=[];
+		for (var i=0; i<data[Object.keys(data)[0]].length; i++) {
+			this.activeRows.push(i);
+		}
+				
+		$.fn.dataTableExt.afnFiltering.push(
+		function (oSettings, aData, iDataIndex) {
+// 			console.log('id = ' + ids[0]+'; iDataIndex = '+iDataIndex+'; activeRows[0] = '+datatables[ids[0]].activeRows+'; '+$.inArray(iDataIndex,datatables[ids[0]].activeRows)>-1);
+			return $.inArray(iDataIndex,datatables[ids[0]].activeRows) > -1;
+		});
+		
+		// set highlight fields
+		this.highlightRow=[];
+		this.highlightCol=[];
+		this.highlightColor=[];
+
 		// initialise datatable
-		console.log('start init datable jquery');
-		$(this.id).dataable();
-		console.log('end init datable jquery');
+		var currId=this.id;
+		var currDataTable = $('#'+this.id).dataTable({
+			"data": dataSet,
+			"columns": colnames,
+			"sDom": 'r<"H"lf><"datatable-scroll"t><"F"ip>',
+			"columnDefs": [{
+				"searchable": false,
+				"orderable": false,
+				"targets": 0
+			}],
+			"order": [[ 1, 'asc' ]],
+			"fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+				var i=datatables[ids[0]].highlightRow.indexOf(aData[0]-1);
+				if (i>-1) {
+					$(nRow).removeClass('status-error status-error-secondary status-ignore status-ignore-secondary status-fixed status-fixed-secondary');
+					$(nRow).addClass(datatables[ids[0]].highlightColor[i]+'-secondary');
+					$(nRow).children().each(function (index, td) {
+						$(this).removeClass('status-error status-error-secondary status-ignore status-ignore-secondary status-fixed status-fixed-secondary');
+						if (index==datatables[ids[0]].highlightCol[i]) {
+							$(this).addClass(datatables[ids[0]].highlightColor[i]);
+						} else {
+							$(this).addClass(datatables[ids[0]].highlightColor[i]+'-secondary');
+						}
+					});
+				}
+			}
+		}).makeEditable({
+			sUpdateURL: function(value, settings) {
+				Shiny.onInputChange(currId + '_update', {
+					row: currDataTable.fnGetPosition(this)[0]+1,
+					col: currDataTable.fnGetPosition(this)[2]+1,
+					value: value,
+					'.nonce': Math.random() // Force reactivity
+				});
+				return(value);
+			}
+		});
+ 		this.jtable=currDataTable;
 	};
 
 	methods.filter=function(row) {
-		console.log(2);
-	
-
-	
+		// convert row to array if integer
+		if (typeof(row) === 'number')
+			row=[row];
+		// substract one from array to acheive base-0 indexing
+		for (var i=0; i<row.length; ++i) {
+			row[i]=row[i]-1;
+		}
+		// set activeRows as new row
+		this.activeRows=row;
+		// force table to redraw
+		this.jtable.fnDraw();
 	};
-
 	
 	methods.highlight=function(row, col, color) {
-		console.log(3);
-	
-	
-	
+		// set array with highlighting info
+		if (typeof(row) === 'number') {
+			row=[row];
+			col=[col];
+			color=[color];
+		}
+		for (var i=0; i<row.length; ++i) {
+			row[i]=row[i]-1;
+			col[i]=col[i]-1;
+		}
+		this.highlightRow=row;
+		this.highlightCol=col;
+		this.highlightColor=color;
+		// force table to redraw
+		this.jtable.fnDraw();
 	};
 		
 	methods.update=function(row, col, value) {
 		console.log(4);
-	
-	
-
 	};
-	
-
-
-
 	
 })();
 	

@@ -63,7 +63,7 @@ ListHtmlRepr=function(outputId, options=NULL) {
 				))
 			),
 			tags$div(id=outputId, class="list-widget-output",
-				tags$div(id=paste0(outputId,"_btns_div"), class="list-btns-div",
+				tags$div(id=paste0(outputId,"_btns_div"), class="list-btns-div center",
 					HTML('
 						<div class="btn-group" data-toggle="buttons">
 							<label class="btn btn-default">

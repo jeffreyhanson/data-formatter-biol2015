@@ -43,7 +43,7 @@ shinyServer(function(input,output,session) {
 	})
 	observe({
 		if(is.empty(input$project_name_CHR))
-			return()			
+			return()
 		isolate({
 			manager$setActiveProjectName(input$project_name_CHR)
 			if (manager$isDirFieldsValid()) {
@@ -70,7 +70,6 @@ shinyServer(function(input,output,session) {
 		})
 	})
 	
-	
 	## make load button active/inactive
 	observe({
 		if(is.empty(input$group_names_VCHR)) {
@@ -86,7 +85,7 @@ shinyServer(function(input,output,session) {
 			})
 		}
 	})
-			
+
 	## load data
 	observe({
 		if(is.null(input$load_data_BTN) || input$load_data_BTN==0)
@@ -99,21 +98,19 @@ shinyServer(function(input,output,session) {
 				# scan data for errors
 				manager$scanDataForErrors()
 				# add errors to widget
-				for (i in seq_along(manager$.errors)) {
-					listwidget$addItem(manager$.errors[[i]]$.id, manager$.errors[[i]]$repr(), manager$.errors[[i]]$.status, FALSE)
+				for (i in seq_along(manager$.errors_LST)) {
+					listwidget$addItem(manager$.errors_LST[[i]]$.id_CHR, manager$.errors_LST[[i]]$repr(), manager$.errors_LST[[i]]$.status_CHR, FALSE)
 				}
 				listwidget$reloadView()
 				# show data
 				tmp=manager$getActiveGroupsData()
 				dtwidget$render(tmp$data)
-				for (i in seq_along(tmp$row))
-					dtwidget$highlight(row=tmp$row[i],col=tmp$col[i],color=tmp$color[i])
+				dtwidget$highlight(row=tmp$highlight_row,col=tmp$highlight_col,color=tmp$highlight_color)
 				output$mainpanelUI=renderUI({dataUI})
 				# change sidebar
 				output$sidebartype=renderText({'error_list_panel'})
 			}
 		})
-		
 	})
 		
 	## zoom item
@@ -122,10 +119,16 @@ shinyServer(function(input,output,session) {
 			return()
 		isolate({
 			# init
+			print(1)
+			str(input$zoomItem)
 			tmp=manager$getDataWithSpecificError(input$zoomItem$id)
+			print(2)
 			# data table widget
+			print(3)
 			dtwidget$filter(tmp$row)
-			dtwidget$highlight(row=tmp$row,col=tmp$col,color=tmp$color)
+			print(4)
+			dtwidget$highlight(row=tmp$highlight_row,col=tmp$highlight_col,color=tmp$highlight_color)
+			print(5)
 		})
 	})
 	
@@ -138,9 +141,42 @@ shinyServer(function(input,output,session) {
 			tmp=manager$getActiveGroupsData(input$listStatus$view)
 			# data table widget
 			dtwidget$filter(tmp$row)
-				dtwidget$highlight(row=tmp$row[i],col=tmp$col[i],color=tmp$color[i])
+			dtwidget$highlight(row=tmp$highlight_row,col=tmp$highlight_col,color=tmp$highlight_color)
 			# list widget
 			listwidget$setView(input$listStatus$view,TRUE)
+		})
+	})
+	
+	## update cell value
+	observe({
+		if(is.null(input$dt_widget_update))
+			return()
+		isolate({
+			# update value
+			manager$.activeViewData_DF[[input$dt_widget_update$col]][input$dt_widget_update$row]<<-as(input$dt_widget_update$value, class(manager$.activeViewData_DF[[input$dt_widget_update$col]]))
+			manager$.activeGroupData_DF[[input$dt_widget_update$col]][as.numeric(rownames(manager$.activeViewData_DF)[input$dt_widget_update$row])]<<-as(input$dt_widget_update$value, class(manager$.activeViewData_DF[[input$dt_widget_update$col]]))
+			
+			# rescan for errors
+			retErrors=manager$scanCellForErrors(as.numeric(rownames(manager$.activeViewData_DF))[input$dt_widget_update$row],input$dt_widget_update$col)
+
+			# update widgets with new errors
+			for (i in seq_along(retErrors$updatedErrors)) {
+				# update list widget with updated errors
+				listwidget$updateItem(retErrors$updatedErrors[[i]]$.id_CHR, retErrors$updatedErrors[[i]]$repr(), retErrors$updatedErrors[[i]]$.status_CHR, FALSE)
+				# update cell highlighting
+				dtwidget$highlight(row=retErrors$updatedErrors[[i]]$.row_INT,col=retErrors$updatedErrors[[i]]$.col_INT,color=retErrors$updatedErrors[[i]]$color())
+			}
+
+			for (i in seq_along(retErrors$newErrors)) {
+				# update list widget with new errors
+				listwidget$addItem(retErrors$newErrors[[i]]$.id_CHR, retErrors$newErrors[[i]]$repr(), retErrors$newErrors[[i]]$.status_CHR, FALSE)
+				# update cell highlighting
+				dtwidget$highlight(row=retErrors$newErrors[[i]]$.row_INT,col=retErrors$newErrors[[i]]$.col_INT,color=retErrors$newErrors[[i]]$color())
+			}
+			
+			# reload list widget
+			listwidget$reloadView()
+			
 		})
 	})
 	
@@ -149,12 +185,15 @@ shinyServer(function(input,output,session) {
 		if (is.null(input$swapIgnoreItem))
 			return()
 		isolate({
-			if (manager$.errors[[input$swapIgnoreItem$id]]$.status=='error' || manager$.errors[[input$swapIgnoreItem$id]]$.status=='ignored') {
-				manager$.errors[[input$swapIgnoreItem$id]]$swapIgnore()
-				listwidget$updateItem(input$swapIgnoreItem$id, manager$.errors[[input$swapIgnoreItem$id]]$repr(), manager$.errors[[input$swapIgnoreItem$id]]$.status, TRUE)
-				if (manager$.activeView=="ignored" || manager$.activeView=="error")
-					listwidget$reloadView()
-			}
+			# update list widget
+			manager$.errors_LST[[input$swapIgnoreItem$id]]$swapIgnore()
+			listwidget$updateItem(input$swapIgnoreItem$id, manager$.errors_LST[[input$swapIgnoreItem$id]]$repr(), manager$.errors_LST[[input$swapIgnoreItem$id]]$.status_CHR, TRUE)
+			if (manager$.activeView_CHR=="ignored" || manager$.activeView_CHR=="error")
+				listwidget$reloadView()
+			# update datatable widget
+			tmp=manager$getActiveGroupsData()
+			dtwidget$filter(tmp$row)
+			dtwidget$highlight(row=tmp$highlight_row,col=tmp$highlight_col,color=tmp$highlight_color)
 		})
 	})
 
