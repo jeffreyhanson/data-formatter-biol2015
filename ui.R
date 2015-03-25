@@ -27,7 +27,7 @@ shinyUI(fluidPage(
 				position: relative;
 			}
 			
-			.status-ignored {
+			.status-ignored-primary {
 				background-color: #F0AD4E !important;
 			}
 			
@@ -35,7 +35,7 @@ shinyUI(fluidPage(
 				background-color: #FFD8A0 !important;
 			}
 			
-			.status-error {
+			.status-error-primary {
 				background-color: #D9534F !important;
 			}
 			
@@ -43,7 +43,7 @@ shinyUI(fluidPage(
 				background-color: #FFADAB !important;
 			}
 			
-			.status-fixed {
+			.status-fixed-primary {
 				background-color: #5CB85C !important;
 			}
 			

@@ -96,16 +96,67 @@
 			}],
 			"order": [[ 1, 'asc' ]],
 			"fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
-				var i=datatables[ids[0]].highlightRow.indexOf(aData[0]-1);
-				if (i>-1) {
-					$(nRow).removeClass('status-error status-error-secondary status-ignore status-ignore-secondary status-fixed status-fixed-secondary');
-					$(nRow).addClass(datatables[ids[0]].highlightColor[i]+'-secondary');
+				// get columns numbers for items
+				console.log('highlightRow = '+datatables[ids[0]].highlightRow);
+				var idxs=[];
+				var idx=datatables[ids[0]].highlightRow.indexOf(aData[0]-1);
+				while (idx>-1) {
+					console.log('pushing idx '+idx);
+					idxs.push(idx);
+					idx=datatables[ids[0]].highlightRow.indexOf(aData[0]-1, idx+1);
+				}
+				
+				// add color classes
+				var secondaryColor;
+				if (idxs.length>0) {
+					
+					console.log('row = '+aData[0]);
+					console.log('idx = '+idxs);
+					
+					// remove all colors from cells
+					$(nRow).removeClass('status-error-secondary status-ignored-secondary status-fixed-secondary');
+					
+					// create subset arrays
+					var curr_highlightCol=[];
+					var curr_highlightColor=[];
+					for (var i=0; i<idxs.length; ++i) {
+						curr_highlightCol.push(datatables[ids[0]].highlightCol[idxs[i]]);
+						curr_highlightColor.push(datatables[ids[0]].highlightColor[idxs[i]]);
+					}
+					console.log('curr_highlightCol = '+curr_highlightCol);
+					console.log('curr_highlightColor = '+curr_highlightColor);
+					
+					// apply secondary colors to cells in row without items
+					var secondaryColor;
+					if (curr_highlightColor.indexOf('status-error')>-1) {
+						secondaryColor='status-error-secondary';
+					} else if (curr_highlightColor.indexOf('status-ignored')>-1) {
+						secondaryColor='status-ignored-secondary';
+					} else if (curr_highlightColor.indexOf('status-fixed')>-1) {
+						secondaryColor='status-fixed-secondary';
+					} else {
+						console.log('unknown status = '+curr_highlightColor);
+					}
+					console.log('secondaryColor = '+secondaryColor);
+					$(nRow).addClass(secondaryColor);
+					
+					// apply primary colors to cell in row with items
 					$(nRow).children().each(function (index, td) {
-						$(this).removeClass('status-error status-error-secondary status-ignore status-ignore-secondary status-fixed status-fixed-secondary');
-						if (index==datatables[ids[0]].highlightCol[i]) {
-							$(this).addClass(datatables[ids[0]].highlightColor[i]);
+						var j=curr_highlightCol.indexOf(index);
+						if (j>-1) {
+							console.log('primary color index = '+j+'; column = '+index);
+							$(this).removeClass('status-error-primary status-error-secondary status-ignored-primary status-ignored-secondary status-fixed-primary status-fixed-secondary');
+							$(this).addClass(curr_highlightColor[j]+'-primary');
 						} else {
-							$(this).addClass(datatables[ids[0]].highlightColor[i]+'-secondary');
+							console.log('secondary color index = '+j+'; column = '+index);
+							if (!(
+								$(this).hasClass('status-error-primary') ||
+								$(this).hasClass('status-error-primary') ||
+								$(this).hasClass('status-fixed-primary')
+							)) {
+								$(this).removeClass('status-error-secondary status-ignored-secondary status-fixed-secondary');
+								$(this).addClass(secondaryColor);
+							}
 						}
 					});
 				}

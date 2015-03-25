@@ -130,8 +130,6 @@ MANAGER=setRefClass("MANAGER",
 					return(NULL)
 				}
 			}) %>% unlist(recursive=FALSE, use.names=FALSE)
-			print("currColErrors")
-			str(currColErrors)
 			# extract existing errors in cell
 			cellErrors=.errors_LST[
 				laply(.errors_LST, function(x) {return(x$.row_INT)})==row &
@@ -212,9 +210,6 @@ MANAGER=setRefClass("MANAGER",
 		},
 		getDataWithSpecificError=function(id) {
 			.activeView_CHR<<-'all'
-			print(300)
-			str(.errors_LST)
-			print(301)
 			.activeViewData_DF<<-.activeGroupData_DF[.errors_LST[[id]]$.row_INT,]
 			return(list(
 				row=.errors_LST[[id]]$.row_INT,
@@ -265,7 +260,7 @@ ERROR=setRefClass("ERROR",
 		},
 		repr=function() {
 			return(paste0('
-			<div class="list-container status-',.status_CHR,'" title="',.description_CHR,'\nRow = ',.row_INT,', Column = ',.col_INT,'.">
+			<div class="list-container status-',.status_CHR,'-primary" title="',.description_CHR,'\nRow = ',.row_INT,', Column = ',.col_INT,'.">
 				<div class="row">
 					<h5 class="list-element-label">(',.id_CHR,')  ',.name_CHR,'</h5>
 					<button class="btn btn-default action-button list-element-zoom" id="',.id_CHR,'_zoom_btn" name="',.id_CHR,'" type="button" onclick="zoomItem(this.name)">

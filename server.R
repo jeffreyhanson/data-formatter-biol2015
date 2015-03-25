@@ -119,16 +119,10 @@ shinyServer(function(input,output,session) {
 			return()
 		isolate({
 			# init
-			print(1)
-			str(input$zoomItem)
 			tmp=manager$getDataWithSpecificError(input$zoomItem$id)
-			print(2)
 			# data table widget
-			print(3)
 			dtwidget$filter(tmp$row)
-			print(4)
 			dtwidget$highlight(row=tmp$highlight_row,col=tmp$highlight_col,color=tmp$highlight_color)
-			print(5)
 		})
 	})
 	
@@ -153,29 +147,46 @@ shinyServer(function(input,output,session) {
 			return()
 		isolate({
 			# update value
-			manager$.activeViewData_DF[[input$dt_widget_update$col]][input$dt_widget_update$row]<<-as(input$dt_widget_update$value, class(manager$.activeViewData_DF[[input$dt_widget_update$col]]))
-			manager$.activeGroupData_DF[[input$dt_widget_update$col]][as.numeric(rownames(manager$.activeViewData_DF)[input$dt_widget_update$row])]<<-as(input$dt_widget_update$value, class(manager$.activeViewData_DF[[input$dt_widget_update$col]]))
+			print(1)
+			manager$.activeViewData_DF[[input$dt_widget_update$col]][match(input$dt_widget_update$row,manager$.activeViewData_DF$Row)]<<-as(input$dt_widget_update$value, class(manager$.activeViewData_DF[[input$dt_widget_update$col]]))
+			print(2)
+			manager$.activeGroupData_DF[[input$dt_widget_update$col]][input$dt_widget_update$row]<<-as(input$dt_widget_update$value, class(manager$.activeViewData_DF[[input$dt_widget_update$col]]))
 			
 			# rescan for errors
-			retErrors=manager$scanCellForErrors(as.numeric(rownames(manager$.activeViewData_DF))[input$dt_widget_update$row],input$dt_widget_update$col)
-
+			print(3)
+			retErrors=manager$scanCellForErrors(input$dt_widget_update$row,input$dt_widget_update$col)
+			print('retErrors')
+			print(retErrors)
+			
 			# update widgets with new errors
+			print(4)
 			for (i in seq_along(retErrors$updatedErrors)) {
 				# update list widget with updated errors
+				print(5)
 				listwidget$updateItem(retErrors$updatedErrors[[i]]$.id_CHR, retErrors$updatedErrors[[i]]$repr(), retErrors$updatedErrors[[i]]$.status_CHR, FALSE)
-				# update cell highlighting
-				dtwidget$highlight(row=retErrors$updatedErrors[[i]]$.row_INT,col=retErrors$updatedErrors[[i]]$.col_INT,color=retErrors$updatedErrors[[i]]$color())
+				print(6)
 			}
+			print(7)
 
 			for (i in seq_along(retErrors$newErrors)) {
 				# update list widget with new errors
+				print(8)
 				listwidget$addItem(retErrors$newErrors[[i]]$.id_CHR, retErrors$newErrors[[i]]$repr(), retErrors$newErrors[[i]]$.status_CHR, FALSE)
-				# update cell highlighting
-				dtwidget$highlight(row=retErrors$newErrors[[i]]$.row_INT,col=retErrors$newErrors[[i]]$.col_INT,color=retErrors$newErrors[[i]]$color())
+				print(9)
 			}
+			print(10)
+			
+			# highlight cells
+			print(10.2)
+			tmp=manager$getActiveGroupsData()
+			print(10.5)
+			dtwidget$highlight(row=tmp$highlight_row,col=tmp$highlight_col,color=tmp$highlight_color)
+			print(10.8)
 			
 			# reload list widget
+			print(11)
 			listwidget$reloadView()
+			print(12)
 			
 		})
 	})
