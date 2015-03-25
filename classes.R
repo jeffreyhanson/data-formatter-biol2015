@@ -121,8 +121,10 @@ MANAGER=setRefClass("MANAGER",
 		},
 		scanCellForErrors=function(row, col) {
 			# init
+			print('scanCellForErrors method')
 			retLST=list()
 			# get all errrors in column
+			print(100)
 			currColErrors=llply(.dataPrep$.errors_LST, function(x) {
 				if (x$.column_CHR==names(.activeGroupData_DF)[col]) {
 					return(x$testForErrors(.activeGroupData_DF))
@@ -130,36 +132,52 @@ MANAGER=setRefClass("MANAGER",
 					return(NULL)
 				}
 			}) %>% unlist(recursive=FALSE, use.names=FALSE)
+			print(101)
+# 			print('errors in column')
+# 			print(currColErrors)
+# 			save(currColErrors,file=file.path(tempdir(),'currColErrors.rda'))
+			
 			# extract existing errors in cell
 			cellErrors=.errors_LST[
 				laply(.errors_LST, function(x) {return(x$.row_INT)})==row &
 				laply(.errors_LST, function(x) {return(x$.col_INT)})==col
 			]
+			print(102)
+# 			print('errors in cell')
+# 			print(cellErrors)
+# 			save(cellErrors,file=file.path(tempdir(),'cellErrors.rda'))
+			
 			## check to see get errors that have been updated
 			# get fixed errors
+			print(103)
 			fixedErrors=cellErrors[laply(cellErrors, function(x) {
 				return(
 					all(
-						laply(currColErrors, function(z){return(z$.row_INT)})!=x$.row_INT &
-						laply(currColErrors, function(z){return(z$.col_INT)})!=x$.col_INT &
-						laply(currColErrors, function(z){return(z$.name_CHR)})!=x$.name_CHR
+						!laply(currColErrors, function(z){return(z$.row_INT)})==x$.row_INT &
+						laply(currColErrors, function(z){return(z$.name_CHR)})==x$.name_CHR
 					)
 				)
 			})]
 			for (i in seq_along(fixedErrors))
-				.errors_LST[fixedErrors[[i]]$.id_CHR]$.status_CHR<<-'fixed'
+				.errors_LST[[fixedErrors[[i]]$.id_CHR]]$setStatus('fixed')
+			
 			# errors that were fixed but are now errors again
 			unfixedErrors=cellErrors[laply(cellErrors, function(x) {
 				return(
 					x$.status_CHR=="fixed" & any(
 						laply(currColErrors, function(z){return(z$.row_INT)})==x$.row_INT &
-						laply(currColErrors, function(z){return(z$.col_INT)})==x$.col_INT &
 						laply(currColErrors, function(z){return(z$.name_CHR)})==x$.name_CHR
 					)
 				)
 			})]
+			for (i in seq_along(unfixedErrors))
+				.errors_LST[[unfixedErrors[[i]]$.id_CHR]]$setStatus('error')
+			
+			# store updates on existing errors
 			retLST$updatedErrors=append(fixedErrors, unfixedErrors)
+			
 			# check to see if new errors
+			print(109)
 			if (length(cellErrors)==0) {
 				retLST$newErrors=currColErrors
 			} else {
@@ -169,11 +187,15 @@ MANAGER=setRefClass("MANAGER",
 					})
 				]
 			}
+			print(110)
 			if (length(retLST$newErrors)>0) {
 				names(retLST$newErrors)=laply(retLST$newErrors, function(z){return(z$.id_CHR)})
 				.errors_LST<<-append(.errors_LST,retLST$newErrors)
 			}
+			print(111)
+			
 			# return error objects
+			print(112)
 			return(retLST)
 		},
 		setErrorStatus=function(id, status) {
@@ -250,6 +272,10 @@ ERROR=setRefClass("ERROR",
 		},
 		isValid=function() {
 			return(.status_CHR=="fixed")
+		},
+		setStatus=function(x) {
+			stopifnot(x %in% c('error','fixed','ignored'))
+			.status_CHR<<-x
 		},
 		swapIgnore=function() {
 			if (.status_CHR=='error') {
@@ -367,7 +393,9 @@ ERROR_TEMPLATE.NORMAL=function(column_name) {
 
 ERROR_TEMPLATE.OUTLIER=function(column_name) {
 	return(ERROR_GENERATOR$new(id, "Potential outlier value", column_name, "Cell value might be an outlier.\nCheck to see if it's an error and if so change it.", function(inpDF) {
+		cat('testing for outliers in',column_name,'\n')
 		rows=which(is.outlier(inpDF[[column_name]]))
+		cat('outliers in: ',rows,'\n')
 		return(data.frame(row=rows, col=rep(match(column_name, names(inpDF)), length(rows))))
 	}))
 }

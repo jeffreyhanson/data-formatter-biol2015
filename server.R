@@ -148,9 +148,11 @@ shinyServer(function(input,output,session) {
 		isolate({
 			# update value
 			print(1)
+			cat('before = ',manager$.activeGroupData_DF[[input$dt_widget_update$col]][input$dt_widget_update$row],'\n')
 			manager$.activeViewData_DF[[input$dt_widget_update$col]][match(input$dt_widget_update$row,manager$.activeViewData_DF$Row)]<<-as(input$dt_widget_update$value, class(manager$.activeViewData_DF[[input$dt_widget_update$col]]))
 			print(2)
 			manager$.activeGroupData_DF[[input$dt_widget_update$col]][input$dt_widget_update$row]<<-as(input$dt_widget_update$value, class(manager$.activeViewData_DF[[input$dt_widget_update$col]]))
+			cat('after = ',manager$.activeGroupData_DF[[input$dt_widget_update$col]][input$dt_widget_update$row],'\n')
 			
 			# rescan for errors
 			print(3)
@@ -158,16 +160,18 @@ shinyServer(function(input,output,session) {
 			print('retErrors')
 			print(retErrors)
 			
-			# update widgets with new errors
+			# update widgets with updated errors
 			print(4)
 			for (i in seq_along(retErrors$updatedErrors)) {
 				# update list widget with updated errors
 				print(5)
+				print(retErrors$updatedErrors[[i]])
 				listwidget$updateItem(retErrors$updatedErrors[[i]]$.id_CHR, retErrors$updatedErrors[[i]]$repr(), retErrors$updatedErrors[[i]]$.status_CHR, FALSE)
 				print(6)
 			}
 			print(7)
 
+			# update widgets with new errors
 			for (i in seq_along(retErrors$newErrors)) {
 				# update list widget with new errors
 				print(8)

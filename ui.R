@@ -106,17 +106,24 @@ shinyUI(fluidPage(
 	tags$body(
 		sidebarLayout(
 			sidebarPanel(
-				div(class='center', tags$h2(class='header', "Data Error Checker")),
-				div(style="visibility:hidden",h3(textOutput('sidebartype'))),
 				conditionalPanel(
+					div(class='center', tags$h2(class='header', "Data Error Checker")),
 					condition="output.sidebartype == 'load_data_panel'",
+					br(),
 					div(	
 						selectInput("week_number_CHR", "Week Number:", choices=week_numbers_VCHR, selected="week 1"),
 						selectInput("project_name_CHR", "Project:", choices=project_names_VCHR, selected="mangrove herbivory"),
 						selectInput("group_color_CHR", "Group Colour:", choices=group_colors_VCHR, selected="blue"),
 						selectInput("group_names_VCHR", "Group Name:", choices=c(""), multiple=TRUE, selectize=TRUE),
 						br(),
-						bsActionButton("load_data_BTN", "Load Data", style="primary")
+						div(class="center", 
+							tags$button(
+								id="load_data_BTN",
+								type="button",
+								class="btn btn-primary btn-lg sbs-action-button",
+								"Load Data"
+							)
+						)
 					)
 				),
 				conditionalPanel(
@@ -145,7 +152,8 @@ shinyUI(fluidPage(
 						)
 
 					)
-				)
+				),
+				div(style="visibility:hidden",h5(textOutput('sidebartype')))
 			),
 			mainPanel(
 				conditionalPanel(

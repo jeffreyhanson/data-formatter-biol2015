@@ -26,7 +26,7 @@ Mangroves_Herbivory=DATA_PREP$new(
 		"Leaf"="character"
 	),
 	format=function(inpDF) {
-		inpDF %>% setnames(c("group","zonal point","TapePoint","quarter","stems","% of leaf missing","leaf distorted ?","number of Mines","number of Galls") ,c("Group","Intertidal zone","Tape point","Quarter","Stems","Percent of leaf missing","Leaf distorted","Number of Mines","Number of Galls"))
+		inpDF %>% setnames(c("group","zonal point","TapePoint","quarter","stems","% of leaf missing","leaf distorted ?","number of Mines","number of Galls", "location notes") ,c("Group","Intertidal zone","Tape point","Quarter","Stem","Percent of leaf missing","Leaf distorted","Number of Mines","Number of Galls", "Location notes"))
 		inpDF %>% mutate(
 				Longitude=na.locf(Longitude),
 				Latitude=na.locf(Latitude),
@@ -36,15 +36,40 @@ Mangroves_Herbivory=DATA_PREP$new(
 				`Bud 2 Dead`=convert2bool(`Bud 2 Dead`),
 				`Bud 3 Live`=convert2bool(`Bud 3 Live`),
 				`Bud 3 Dead`=convert2bool(`Bud 3 Dead`),
+				`Quarter`=gsub('quarter','Quarter',Quarter),
+				`Stem`=gsub('stem','Stem',Stem),
 				`Percent of leaf missing`={`Percent of leaf missing`/100},
 				`Leaf distorted`=convert2bool(`Leaf distorted`)
-		) %>% filter(grepl("quarter",Quarter)) %>% return()
+			) %>% 
+			filter(grepl("Quarter",Quarter)) %>% 
+			select( `Date`,
+				`Time`,
+				`Group`,
+				`Intertidal zone`,
+				`Tape point`,
+				`Quarter`,
+				`Distance from point`,
+				`Height`,
+				`Circumference`,
+				`Stem`,
+				`Leaf`, 
+				`Bud 1 Live`,
+				`Bud 2 Live`,
+				`Bud 3 Live`,
+				`Leaf distorted`,
+				`Percent of leaf missing` ,
+				`Number of Mines`,
+				`Number of Galls`,
+				`Longitude`,
+				`Latitude`,
+				`Location notes`
+			) %>% return()
 	},
 	errors=list(
 		ERROR_TEMPLATE.FACTOR("Intertidal zone", c('Seaward','Landward - Creek')),
-		ERROR_TEMPLATE.SEQUENCE.REPEATS("Quarter", c('quarter 1', 'quarter 2', 'quarter 3', 'quarter 4'), by="Intertidal zone"),
-		ERROR_TEMPLATE.SEQUENCE.REPEATS("Stems", c("stem 1", "stem 2", "stem 3", "stem 4", "stem 5", "stem 6", "stem 7", "stem 8"), by=c("Intertidal zone","Quarter")),
-		ERROR_TEMPLATE.SEQUENCE.NO_REPEATS("Leaf", c("Leaf 1", "Leaf 2", "Leaf 3", "Leaf 4", "Leaf 5", "Leaf 6"), by=c("Intertidal zone","Quarter","Stems")),
+		ERROR_TEMPLATE.SEQUENCE.REPEATS("Quarter", c('Quarter 1', 'Quarter 2', 'Quarter 3', 'Quarter 4'), by="Intertidal zone"),
+		ERROR_TEMPLATE.SEQUENCE.REPEATS("Stem", c("Stem 1", "Stem 2", "Stem 3", "Stem 4", "Stem 5", "Stem 6", "Stem 7", "Stem 8"), by=c("Intertidal zone","Quarter")),
+		ERROR_TEMPLATE.SEQUENCE.NO_REPEATS("Leaf", c("Leaf 1", "Leaf 2", "Leaf 3", "Leaf 4", "Leaf 5", "Leaf 6"), by=c("Intertidal zone","Quarter","Stem")),
 		ERROR_TEMPLATE.TRUNCATED("Tape point"),
 		ERROR_TEMPLATE.OUTLIER("Tape point"),
 		ERROR_TEMPLATE.TRUNCATED("Distance from point"),
@@ -62,39 +87,41 @@ Mangroves_Herbivory=DATA_PREP$new(
 	process=function(inpDF) {
 		stemDF=inpDF[,
 			list(
-				DateTime=min(DateTime, n.rm=TRUE),
+				Date=na.omit(first(Date)),
+				Time=na.omit(first(Time)),
 				Longitude=mean(Longitude,na.rm=TRUE),
 				Latitude=mean(Latitude,na.rm=TRUE),
-				Distance_from_point=mean(Distance_from_point,na.rm=TRUE),
+				`Distance from point`=mean(`Distance from point`,na.rm=TRUE),
 				Height=mean(Height,na.rm=TRUE),
 				Circumference=mean(Circumference,na.rm=TRUE),
-				Number_of_buds_alive=sum(c(Bud_1_Live,Bud_2_Live,Bud_3_Live)),
-				Number_of_leaves_distorted=sum(Leaf_distorted),
-				Number_of_Mines=mean(Number_of_Mines,na.rm=TRUE),
-				Number_of_Galls=mean(Number_of_Galls,na.rm=TRUE),
-				Average_percent_of_leaf_missing=mean(Percent_of_leaf_missing,na.rm=TRUE),
-				Number_of_leaves=length(Number_of_Galls)
+				`Number of buds alive`=sum(c(`Bud 1 Live`,`Bud 2 Live`,`Bud 3 Live`)),
+				`Number of leaves distorted`=sum(`Leaf distorted`),
+				`Number of Mines`=mean(`Number of Mines`,na.rm=TRUE),
+				`Number of Galls`=mean(`Number of Galls`,na.rm=TRUE),
+				`Average percent of leaf missing`=mean(`Percent of leaf missing`,na.rm=TRUE),
+				`Number of leaves`=length(`Number of Galls`)
 			),
-			by=list(Group, Intertidal_zone, Tape_point, Quarter, Stems)
+			by=list(Group, `Intertidal zone`, `Tape point`, Quarter, Stems)
 		]
-		tempDF=stemDF[,
+		quarterDF=stemDF[,
 			list(
-				DateTime=min(DateTime, n.rm=TRUE),
+				`Date`=na.omit(first(Date)),
+				`Time`=na.omit(first(Time)),
 				Longitude=mean(Longitude,na.rm=TRUE),
 				Latitude=mean(Latitude,na.rm=TRUE),
-				Distance_from_point=mean(Distance_from_point,na.rm=TRUE),
+				`Distance from point`=mean(`Distance from point`,na.rm=TRUE),
 				Height=mean(Height,na.rm=TRUE),
 				Circumference=mean(Circumference,na.rm=TRUE),
-				Average_mumber_of_buds_alive=mean(Number_of_buds_alive),
-				Average_number_of_leaves_distorted=sum(Number_of_leaves_distorted),
-				Average_number_of_Mines=mean(Number_of_Mines,na.rm=TRUE),
-				Average_number_of_Galls=mean(Number_of_Galls,na.rm=TRUE),
-				Average_percent_of_leaf_missing=mean(Average_percent_of_leaf_missing,na.rm=TRUE),
-				Average_number_of_leaves_per_stem=mean(Number_of_leaves,na.rm=TRUE),
-				Number_of_stems=length(Longitude)
+				`Average number of buds alive`=mean(`Number of buds alive`),
+				`Average number of leaves distorted`=sum(`Number of leaves distorted`),
+				`Average number of Mines`=mean(`Number of Mines`,na.rm=TRUE),
+				`Average number of Galls`=mean(`Number of Galls`,na.rm=TRUE),
+				`Average percent of leaf missing`=mean(`Average percent of leaf missing`,na.rm=TRUE),
+				`Average number of leaves per stem`=mean(`Number of leaves`,na.rm=TRUE),
+				`Number of stems`=length(Longitude)
 			),
-			by=list(Group, Intertidal_zone, Tape_point, Quarter)
+			by=list(Group, `Intertidal zone`, `Tape point`, Quarter)
 		]
-		return(tempDF)
+		return(quarterDF)
 	}
 )
