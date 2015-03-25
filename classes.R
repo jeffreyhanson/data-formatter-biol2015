@@ -121,10 +121,8 @@ MANAGER=setRefClass("MANAGER",
 		},
 		scanCellForErrors=function(row, col) {
 			# init
-			print('scanCellForErrors method')
 			retLST=list()
 			# get all errrors in column
-			print(100)
 			currColErrors=llply(.dataPrep$.errors_LST, function(x) {
 				if (x$.column_CHR==names(.activeGroupData_DF)[col]) {
 					return(x$testForErrors(.activeGroupData_DF))
@@ -132,24 +130,15 @@ MANAGER=setRefClass("MANAGER",
 					return(NULL)
 				}
 			}) %>% unlist(recursive=FALSE, use.names=FALSE)
-			print(101)
-# 			print('errors in column')
-# 			print(currColErrors)
-# 			save(currColErrors,file=file.path(tempdir(),'currColErrors.rda'))
 			
 			# extract existing errors in cell
 			cellErrors=.errors_LST[
 				laply(.errors_LST, function(x) {return(x$.row_INT)})==row &
 				laply(.errors_LST, function(x) {return(x$.col_INT)})==col
 			]
-			print(102)
-# 			print('errors in cell')
-# 			print(cellErrors)
-# 			save(cellErrors,file=file.path(tempdir(),'cellErrors.rda'))
 			
 			## check to see get errors that have been updated
 			# get fixed errors
-			print(103)
 			fixedErrors=cellErrors[laply(cellErrors, function(x) {
 				return(
 					all(
@@ -177,7 +166,6 @@ MANAGER=setRefClass("MANAGER",
 			retLST$updatedErrors=append(fixedErrors, unfixedErrors)
 			
 			# check to see if new errors
-			print(109)
 			if (length(cellErrors)==0) {
 				retLST$newErrors=currColErrors
 			} else {
@@ -187,15 +175,12 @@ MANAGER=setRefClass("MANAGER",
 					})
 				]
 			}
-			print(110)
 			if (length(retLST$newErrors)>0) {
 				names(retLST$newErrors)=laply(retLST$newErrors, function(z){return(z$.id_CHR)})
 				.errors_LST<<-append(.errors_LST,retLST$newErrors)
 			}
-			print(111)
 			
 			# return error objects
-			print(112)
 			return(retLST)
 		},
 		setErrorStatus=function(id, status) {
@@ -220,13 +205,15 @@ MANAGER=setRefClass("MANAGER",
 
 			} else {
 				ind=which(laply(.errors_LST, "[[", ".status_CHR")==status)
-				.activeViewData_DF<<-.activeGroupData_DF[laply(.errors_LST[ind], "[[", ".row_INT"),]
+				rows=laply(.errors_LST[ind], "[[", ".row_INT")
+				ind2=which(laply(.errors_LST, "[[", ".row_INT") %in% rows)
+				.activeViewData_DF<<-.activeGroupData_DF[rows,]
 				return(list(
 					data=.activeViewData_DF,
-					row=unname(laply(.errors_LST[ind], "[[", ".row_INT")),
-					highlight_row=unname(laply(.errors_LST[ind], "[[", ".row_INT")),
-					highlight_col=unname(laply(.errors_LST[ind], "[[", ".col_INT")),
-					highlight_color=unname(laply(.errors_LST[ind], function(x) x$color()))
+					row=unname(laply(.errors_LST[ind2], "[[", ".row_INT")),
+					highlight_row=unname(laply(.errors_LST[ind2], "[[", ".row_INT")),
+					highlight_col=unname(laply(.errors_LST[ind2], "[[", ".col_INT")),
+					highlight_color=unname(laply(.errors_LST[ind2], function(x) x$color()))
 				))
 			}
 		},
@@ -393,13 +380,17 @@ ERROR_TEMPLATE.NORMAL=function(column_name) {
 
 ERROR_TEMPLATE.OUTLIER=function(column_name) {
 	return(ERROR_GENERATOR$new(id, "Potential outlier value", column_name, "Cell value might be an outlier.\nCheck to see if it's an error and if so change it.", function(inpDF) {
-		cat('testing for outliers in',column_name,'\n')
 		rows=which(is.outlier(inpDF[[column_name]]))
-		cat('outliers in: ',rows,'\n')
 		return(data.frame(row=rows, col=rep(match(column_name, names(inpDF)), length(rows))))
 	}))
 }
 
+ERROR_TEMPLATE.BINARY=function(column_name) {
+	return(ERROR_GENERATOR$new(id, "Invalid binary value", column_name, "Cell value should be either 0 or 1.\nChange the value in this celll.", function(inpDF) {
+		rows=which(!inpDF[[column_name]] %in% c(0,1))
+		return(data.frame(row=rows, col=rep(match(column_name, names(inpDF)), length(rows))))
+	}))
+}
 
 error_list_to_matrix=function(errorLST) {
 	return(laply(errorLST, function(x) {

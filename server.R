@@ -147,50 +147,34 @@ shinyServer(function(input,output,session) {
 			return()
 		isolate({
 			# update value
-			print(1)
-			cat('before = ',manager$.activeGroupData_DF[[input$dt_widget_update$col]][input$dt_widget_update$row],'\n')
 			manager$.activeViewData_DF[[input$dt_widget_update$col]][match(input$dt_widget_update$row,manager$.activeViewData_DF$Row)]<<-as(input$dt_widget_update$value, class(manager$.activeViewData_DF[[input$dt_widget_update$col]]))
-			print(2)
 			manager$.activeGroupData_DF[[input$dt_widget_update$col]][input$dt_widget_update$row]<<-as(input$dt_widget_update$value, class(manager$.activeViewData_DF[[input$dt_widget_update$col]]))
-			cat('after = ',manager$.activeGroupData_DF[[input$dt_widget_update$col]][input$dt_widget_update$row],'\n')
 			
 			# rescan for errors
-			print(3)
 			retErrors=manager$scanCellForErrors(input$dt_widget_update$row,input$dt_widget_update$col)
-			print('retErrors')
-			print(retErrors)
 			
 			# update widgets with updated errors
-			print(4)
-			for (i in seq_along(retErrors$updatedErrors)) {
-				# update list widget with updated errors
-				print(5)
-				print(retErrors$updatedErrors[[i]])
+			for (i in seq_along(retErrors$updatedErrors))
 				listwidget$updateItem(retErrors$updatedErrors[[i]]$.id_CHR, retErrors$updatedErrors[[i]]$repr(), retErrors$updatedErrors[[i]]$.status_CHR, FALSE)
-				print(6)
-			}
-			print(7)
 
 			# update widgets with new errors
-			for (i in seq_along(retErrors$newErrors)) {
-				# update list widget with new errors
-				print(8)
+			for (i in seq_along(retErrors$newErrors))
 				listwidget$addItem(retErrors$newErrors[[i]]$.id_CHR, retErrors$newErrors[[i]]$repr(), retErrors$newErrors[[i]]$.status_CHR, FALSE)
-				print(9)
-			}
-			print(10)
+			
+			
+			print('retErrors$newErrors')
+			print(retErrors$newErrors)
 			
 			# highlight cells
-			print(10.2)
 			tmp=manager$getActiveGroupsData()
-			print(10.5)
+			
+			print('manager$getActiveGroupsData()')
+			print(str(tmp))
+			
 			dtwidget$highlight(row=tmp$highlight_row,col=tmp$highlight_col,color=tmp$highlight_color)
-			print(10.8)
 			
 			# reload list widget
-			print(11)
 			listwidget$reloadView()
-			print(12)
 			
 		})
 	})

@@ -116,12 +116,17 @@ shinyUI(fluidPage(
 						selectInput("group_color_CHR", "Group Colour:", choices=group_colors_VCHR, selected="blue"),
 						selectInput("group_names_VCHR", "Group Name:", choices=c(""), multiple=TRUE, selectize=TRUE),
 						br(),
+
+						
+# 						bsActionButton("load_data_BTN", "Load Data", style='primary')
+
 						div(class="center", 
 							tags$button(
 								id="load_data_BTN",
 								type="button",
-								class="btn btn-primary btn-lg sbs-action-button",
-								"Load Data"
+								class="btn action-button btn-primary sbs-action-button btn-lg",
+								"Load Data",
+								title="Load data collected by a group for a specific project"
 							)
 						)
 					)
@@ -137,7 +142,7 @@ shinyUI(fluidPage(
 								id="scan_data_BTN",
 								type="button",
 								style="primary",
-								class="btn btn-primary sbs-action-button",
+								class="btn action-button btn-primary sbs-action-button btn-lg",
 								tags$i(class="fa fa-search"),
 								title="Rescan data for errors."
 							),
@@ -145,9 +150,9 @@ shinyUI(fluidPage(
 								id="submit_data_BTN",
 								type="button",
 								style="primary",
-								class="btn btn-primary sbs-action-button",
+								class="btn action-button btn-primary sbs-action-button btn-lg",
 								tags$i(class="fa fa-cloud-upload"),
-								title="Submit data to the cloud?"
+								title="Finished correcting all the errors and want to submit data to the cloud?"
 							)
 						)
 

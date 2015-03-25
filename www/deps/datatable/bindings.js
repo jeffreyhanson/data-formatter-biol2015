@@ -151,7 +151,7 @@
 							console.log('secondary color index = '+j+'; column = '+index);
 							if (!(
 								$(this).hasClass('status-error-primary') ||
-								$(this).hasClass('status-error-primary') ||
+								$(this).hasClass('status-ignored-primary') ||
 								$(this).hasClass('status-fixed-primary')
 							)) {
 								$(this).removeClass('status-error-secondary status-ignored-secondary status-fixed-secondary');
