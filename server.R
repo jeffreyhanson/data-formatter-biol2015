@@ -99,7 +99,7 @@ shinyServer(function(input,output,session) {
 				manager$scanDataForErrors()
 				# add errors to widget
 				for (i in seq_along(manager$.errors_LST)) {
-					listwidget$addItem(manager$.errors_LST[[i]]$.id_CHR, manager$.errors_LST[[i]]$repr(), manager$.errors_LST[[i]]$.status_CHR, FALSE)
+					listwidget$addItem(manager$.errors_LST[[i]]$.id_CHR, manager$.errors_LST[[i]]$repr(), manager$.errors_LST[[i]]$.status_CHR, manager$.errors_LST[[i]]$key(), FALSE)
 				}
 				listwidget$reloadView()
 				# show data
@@ -123,6 +123,8 @@ shinyServer(function(input,output,session) {
 			# data table widget
 			dtwidget$filter(tmp$row)
 			dtwidget$highlight(row=tmp$highlight_row,col=tmp$highlight_col,color=tmp$highlight_color)
+			# filter list widget
+			listwidget$filterItems(input$zoomItem$id, TRUE)
 		})
 	})
 	
@@ -155,22 +157,15 @@ shinyServer(function(input,output,session) {
 			
 			# update widgets with updated errors
 			for (i in seq_along(retErrors$updatedErrors))
-				listwidget$updateItem(retErrors$updatedErrors[[i]]$.id_CHR, retErrors$updatedErrors[[i]]$repr(), retErrors$updatedErrors[[i]]$.status_CHR, FALSE)
+				listwidget$updateItem(retErrors$updatedErrors[[i]]$.id_CHR, retErrors$updatedErrors[[i]]$repr(), retErrors$updatedErrors[[i]]$.status_CHR, retErrors$updatedErrors[[i]]$key(), FALSE)
 
 			# update widgets with new errors
 			for (i in seq_along(retErrors$newErrors))
-				listwidget$addItem(retErrors$newErrors[[i]]$.id_CHR, retErrors$newErrors[[i]]$repr(), retErrors$newErrors[[i]]$.status_CHR, FALSE)
+				listwidget$addItem(retErrors$newErrors[[i]]$.id_CHR, retErrors$newErrors[[i]]$repr(), retErrors$newErrors[[i]]$.status_CHR, retErrors$newErrors[[i]]$key(), FALSE)
 			
-			
-			print('retErrors$newErrors')
-			print(retErrors$newErrors)
-			
+					
 			# highlight cells
-			tmp=manager$getActiveGroupsData()
-			
-			print('manager$getActiveGroupsData()')
-			print(str(tmp))
-			
+			tmp=manager$getActiveGroupsData()			
 			dtwidget$highlight(row=tmp$highlight_row,col=tmp$highlight_col,color=tmp$highlight_color)
 			
 			# reload list widget
@@ -186,9 +181,7 @@ shinyServer(function(input,output,session) {
 		isolate({
 			# update list widget
 			manager$.errors_LST[[input$swapIgnoreItem$id]]$swapIgnore()
-			listwidget$updateItem(input$swapIgnoreItem$id, manager$.errors_LST[[input$swapIgnoreItem$id]]$repr(), manager$.errors_LST[[input$swapIgnoreItem$id]]$.status_CHR, TRUE)
-			if (manager$.activeView_CHR=="ignored" || manager$.activeView_CHR=="error")
-				listwidget$reloadView()
+			listwidget$updateItem(input$swapIgnoreItem$id, manager$.errors_LST[[input$swapIgnoreItem$id]]$repr(), manager$.errors_LST[[input$swapIgnoreItem$id]]$.status_CHR, manager$.errors_LST[[input$swapIgnoreItem$id]]$key(), TRUE)
 			# update datatable widget
 			tmp=manager$getActiveGroupsData()
 			dtwidget$filter(tmp$row)

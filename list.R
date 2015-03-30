@@ -39,9 +39,11 @@ createList<-function(session, outputId) {
   structure(c(
 	stub(reloadView()),
 	stub(setView(status,force_reset)),
-	stub(addItem(id, item, status, force_reset)),
-	stub(updateItem(id, item, status, force_reset)),
-	stub(removeItem(id, force_reset))
+	stub(addItem(id, item, status, key, force_reset)),
+	stub(updateItem(id, item, status, key, force_reset)),
+	stub(removeItem(id, force_reset)),
+	stub(filterItems(ids, force_reset))
+	
   ), class = "list_widget")
 }
 

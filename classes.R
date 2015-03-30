@@ -236,17 +236,19 @@ ERROR=setRefClass("ERROR",
 		.status_CHR="character",
 		.row_INT="integer",
 		.col_INT="integer",
+		.col_CHR="character",
 		.name_CHR="character",
 		.description_CHR="character",
 		.test_FUN="function"
 	),
 	methods=list(
-		initialize=function(id, name, i, j, description, test) {
+		initialize=function(id, name, i, j, k, description, test) {
 			.id_CHR<<-id
 			.name_CHR<<-name
 			.status_CHR<<-"error"
 			.row_INT<<-i
 			.col_INT<<-j
+			.col_CHR<<-k
 			.description_CHR<<-description
 			.test_FUN<<-test
 		},
@@ -256,6 +258,10 @@ ERROR=setRefClass("ERROR",
 			} else {
 				.status_CHR<<-"error"
 			}
+		},
+		key=function() {
+# 			return(.row_INT)
+			return(1/(as.numeric(.row_INT)+(as.numeric(.col_INT)*0.1)))
 		},
 		isValid=function() {
 			return(.status_CHR=="fixed")
@@ -273,7 +279,7 @@ ERROR=setRefClass("ERROR",
 		},
 		repr=function() {
 			return(paste0('
-			<div class="list-container status-',.status_CHR,'-primary" title="',.description_CHR,'\nRow = ',.row_INT,', Column = ',.col_INT,'.">
+			<div class="list-container status-',.status_CHR,'-primary" title="',.description_CHR,'\nRow = ',.row_INT,', Column = ',.col_CHR,'.">
 				<div class="row">
 					<h5 class="list-element-label">(',.id_CHR,')  ',.name_CHR,'</h5>
 					<button class="btn btn-default action-button list-element-zoom" id="',.id_CHR,'_zoom_btn" name="',.id_CHR,'" type="button" onclick="zoomItem(this.name)">
@@ -310,39 +316,68 @@ ERROR_GENERATOR=setRefClass("ERROR_GENERATOR",
 		},
 		testForErrors=function(inpDF) {
 			return(alply(.test_FUN(inpDF),1, function(x) {
-				return(ERROR$new(.id_CHR$new(), .name_CHR, x[[1]], x[[2]], .description_CHR, .test_FUN))
+				return(ERROR$new(.id_CHR$new(), .name_CHR, x[[1]], x[[2]], names(inpDF)[x[[2]]], .description_CHR, .test_FUN))
 			}))
 		}
 	)
 )
 
 ERROR_TEMPLATE.FACTOR=function(column_name, values) {
-	return( ERROR_GENERATOR$new(id, "Invalid factor value.", column_name, paste0("Cell value should be: ",phrase_FUN(values),"."), function(inpDF) {
+	return( ERROR_GENERATOR$new(id, "Invalid factor value", column_name, paste0("Cell value should be: ",phrase_FUN(values),"."), function(inpDF) {
 		rows=which(!inpDF[[column_name]] %in% values)
 		return(data.frame(row=rows, col=rep(match(column_name, names(inpDF)), length(rows))))
 	}))
 }
 
 ERROR_TEMPLATE.SEQUENCE.REPEATS=function(column_name, values, by) {
-	return(ERROR_GENERATOR$new(id, "Invalid value in sequence (repeats).", column_name, paste0("Cell value should be in the sequence: ",phrase_FUN(values, "then"),"."), function(inpDF) {
+	return(ERROR_GENERATOR$new(id, "Invalid value in sequence", column_name, paste0("Cell value should be in the sequence: ",phrase_FUN(values, "then"),".\nThe same value can be repeated multiple times in a row."), function(inpDF) {
 		vals=inpDF[[column_name]]
 		names(vals)=seq_along(inpDF[[column_name]])
 		rows=tapply(vals, INDEX=llply(by, function(x){return(inpDF[[x]])}), simplify=FALSE, FUN=function(x) {
-			ord=rle(match(x, values))$values
-			return(names(x)[ord==cummax(ord)])
-		})$x %>% unlist(recursive=TRUE, use.names=FALSE) %>% as.numeric()
+			rows=names(x)[!x %in% values]
+			ind=which(x %in% values)
+			if (length(ind) > 0) {
+				ids=match(x[ind], values)
+				ind2=ids[which(
+					!(
+						ids[1:(length(ids)-1)] == ids[2:length(ids)]-1 |
+						ids[1:(length(ids)-1)] == ids[2:length(ids)] |
+						(
+							ids[1:(length(ids)-1)]==max(ids) &
+							ids[2:length(ids)]==min(ids)
+						)
+					)
+				)]
+				rows=c(rows, names(x[ind[ind2]]))
+			}
+			return(rows)
+		}) %>% unlist(recursive=TRUE, use.names=FALSE) %>% as.integer()
 		return(data.frame(row=rows, col=rep(match(column_name, names(inpDF)), length(rows))))
 	}))
 }
 
 ERROR_TEMPLATE.SEQUENCE.NO_REPEATS=function(column_name, values, by) {
-	return(ERROR_GENERATOR$new(id, "Invalid value in sequence (no repeats).", column_name, paste0("Cell value should be in the sequence: ",phrase_FUN(values, "then"),"."), function(inpDF) {
+	return(ERROR_GENERATOR$new(id, "Invalid value in sequence", column_name, paste0("Cell value should be in the sequence: ",phrase_FUN(values, "then"),".\nThe same value cannot be repeated multiple times in a row."), function(inpDF) {
 		vals=inpDF[[column_name]]
 		names(vals)=seq_along(inpDF[[column_name]])
 		rows=tapply(vals, INDEX=llply(by, function(x){return(inpDF[[x]])}), simplify=FALSE, FUN=function(x) {
-			diffs=match(x, values) %>% diff
-			return(names(x)[which(diffs!=1)+1])
-		})$x %>% unlist(recursive=TRUE, use.names=FALSE) %>% as.numeric()
+			rows=names(x)[!x %in% values]
+			ind=which(x %in% values)
+			if (length(ind) > 0) {
+				ids=match(x[ind], values)
+				ind2=ids[which(
+					!(
+						ids[1:(length(ids)-1)] == ids[2:length(ids)]-1 |
+						(
+							ids[1:(length(ids)-1)]==max(ids) &
+							ids[2:length(ids)]==min(ids)
+						)
+					)
+				)]
+				rows=c(rows, names(x[ind[ind2]]))
+			}
+			return(rows)
+		}) %>% unlist(recursive=TRUE, use.names=FALSE) %>% as.integer()
 		return(data.frame(row=rows, col=rep(match(column_name, names(inpDF)), length(rows))))
 	}))
 }
@@ -357,16 +392,14 @@ ERROR_TEMPLATE.TRUNCATED=function(column_name) {
 
 ERROR_TEMPLATE.PERCENT=function(column_name) {
 	return(ERROR_GENERATOR$new(id, "Invalid percent value", column_name, "Cell value should be between 0-1.\nChange the value in this cell.", function(inpDF) {
-		rows=inpDF[[column_name]]<0 || inpDF[[column_name]]>1
-		rows[is.na(rows)]=TRUE
-		rows=which(rows)
+		rows=which(is.na(inpDF[[column_name]]) || inpDF[[column_name]]<0 || inpDF[[column_name]]>1)
 		return(data.frame(row=rows, col=rep(match(column_name, names(inpDF)), length(rows))))
 	}))
 }
 
 ERROR_TEMPLATE.POISSON=function(column_name) {
 	return(ERROR_GENERATOR$new(id, "Invalid Poisson value", column_name, "Cell value should be integer and not less than 0.\nChange the value in this cell.", function(inpDF) {
-		rows=which(inpDF[[column_name]]<0 || round(inpDF[[column_name]])!=inpDF[[column_name]])
+		rows=which(is.na(inpDF[[column_name]]) || inpDF[[column_name]]<0 || round(inpDF[[column_name]])!=inpDF[[column_name]])
 		return(data.frame(row=rows, col=rep(match(column_name, names(inpDF)), length(rows))))
 	}))
 }
