@@ -162,10 +162,9 @@ shinyServer(function(input,output,session) {
 			# update widgets with new errors
 			for (i in seq_along(retErrors$newErrors))
 				listwidget$addItem(retErrors$newErrors[[i]]$.id_CHR, retErrors$newErrors[[i]]$repr(), retErrors$newErrors[[i]]$.status_CHR, retErrors$newErrors[[i]]$key(), FALSE)
-			
 					
 			# highlight cells
-			tmp=manager$getActiveGroupsData()			
+			tmp=manager$getActiveGroupsData()
 			dtwidget$highlight(row=tmp$highlight_row,col=tmp$highlight_col,color=tmp$highlight_color)
 			
 			# reload list widget
@@ -189,6 +188,33 @@ shinyServer(function(input,output,session) {
 		})
 	})
 
+	## swap row omission status
+	observe({
+		if (is.null(input$swapOmission))
+			return()
+		isolate ({
+			# update manager
+			retErrors=manager$swapOmission(as.integer(input$swapOmission$id))
+			
+			# update list widget
+			for (i in seq_along(retErrors$updatedErrors)) {
+				listwidget$updateItem(retErrors$updatedErrors[[i]]$.id_CHR, retErrors$updatedErrors[[i]]$repr(), retErrors$updatedErrors[[i]]$.status_CHR, retErrors$updatedErrors[[i]]$key(), FALSE)
+			}
+			
+			for (i in seq_along(retErrors$newErrors)) {
+				listwidget$addItem(retErrors$newErrors[[i]]$.id_CHR, retErrors$newErrors[[i]]$repr(), retErrors$newErrors[[i]]$.status_CHR, retErrors$newErrors[[i]]$key(), FALSE)
+			}
+			listwidget$reloadView()
+
+			# update datatable widget
+			tmp=manager$getActiveGroupsData()
+			dtwidget$filter(tmp$row)
+			dtwidget$omitRow(input$swapOmission$id, manager$.omittedRows_BOL[as.integer(input$swapOmission$id)])
+			dtwidget$highlight(row=tmp$highlight_row,col=tmp$highlight_col,color=tmp$highlight_color)
+		})
+	})
+	
+	
 	## save data
 	observe({
 		if (is.null(input$submit_data_BTN) || input$submit_data_BTN==0)

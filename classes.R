@@ -46,6 +46,7 @@ MANAGER=setRefClass("MANAGER",
 		.activeProjectName_CHR="character",
 		.activeGroupColor_CHR="character",
 		.activeGroupNames_CHR="character",
+		.omittedRows_BOL="logical",
 		
 		.fullProjectData_DF="data.table",
 		.activeGroupData_DF="data.table",
@@ -54,6 +55,7 @@ MANAGER=setRefClass("MANAGER",
 		.activeViewData_DF="data.table",
 		
 		.errors_LST="list"
+		
 	),
 	methods=list(
 		#### initialize methods
@@ -66,6 +68,7 @@ MANAGER=setRefClass("MANAGER",
 			.fullProjectData_DF<<-data.table(0)
 			.activeGroupData_DF<<-data.table(0)
 			.activeViewData_DF<<-data.table(0)
+			.omittedRows_BOL<<-logical(0)
 		},
 		#### field validating methods
 		isDirFieldsValid=function() {
@@ -107,9 +110,41 @@ MANAGER=setRefClass("MANAGER",
 			.activeGroupNames_CHR<<-group_names
 		},
 		setActiveData=function() {
-			.activeGroupData_DF<<-.fullProjectData_DF %>% filter(Group %in% .activeGroupNames_CHR)
+			.activeGroupData_DF<<-.fullProjectData_DF %>% filter(Group %in% .activeGroupNames_CHR)			
+			.activeGroupData_DF$DeleteButton<<-paste0('
+				<button class="btn btn-default action-button btn-xs" id="delteBtn_', seq_len(nrow(.activeGroupData_DF)), '" name="', seq_len(nrow(.activeGroupData_DF)), '" type="button" onclick="swapOmission(name)" action="show">
+					<i class="fa fa-minus-circle" style="color:red"></i>
+				</button>')
 			.activeGroupData_DF$Row<<-seq_len(nrow(.activeGroupData_DF))
-			.activeGroupData_DF<<-.activeGroupData_DF[,c(ncol(.activeGroupData_DF),seq_len(ncol(.activeGroupData_DF)-1)),with=FALSE]	
+			.activeGroupData_DF<<-.activeGroupData_DF[,c(ncol(.activeGroupData_DF)-1, ncol(.activeGroupData_DF), seq_len(ncol(.activeGroupData_DF)-2)),with=FALSE]
+			.omittedRows_BOL<<-rep(FALSE, nrow(.activeGroupData_DF))
+		},
+		swapOmission=function(row) {
+			# init
+			ret_LST=list(updatedErrors=list() ,newErrors=list())
+			if (!.omittedRows_BOL[row]) {
+				# actions to omit row
+				.omittedRows_BOL[row]<<-TRUE
+				# set all issues in row to be ignored
+				for (i in seq_along(.errors_LST)) {
+					if (.errors_LST[[i]]$.row_INT==row) {
+						.errors_LST[[i]]$setStatus('ignored')
+						ret_LST$updatedErrors=append(ret_LST$updatedErrors, .errors_LST[[i]])
+					}
+				}
+			} else {
+				# actions to de-omit row
+				.omittedRows_BOL[row]<<-FALSE
+				# check all cells in row for issues
+				for (i in seq_len(ncol(.activeGroupData_DF))[c(-1,-2)]) {
+					currErrors_LST=scanCellForErrors(row, i, includeIgnored=TRUE)
+					ret_LST$updatedErrors=append(ret_LST$updatedErrors, currErrors_LST$updatedErrors)
+					ret_LST$newErrors=append(ret_LST$newErrors, currErrors_LST$newErrors)
+				
+				}
+			}
+			# post
+			return(ret_LST)
 		},
 		
 		#### error handling methods
@@ -119,9 +154,10 @@ MANAGER=setRefClass("MANAGER",
 				.errors_LST[laply(tempErrors, function(x){return(x$.id_CHR)})]<<-tempErrors
 			}
 		},
-		scanCellForErrors=function(row, col) {
+		scanCellForErrors=function(row, col, includeIgnored=FALSE) {
 			# init
 			retLST=list()
+			
 			# get all errrors in column
 			currColErrors=llply(.dataPrep$.errors_LST, function(x) {
 				if (x$.column_CHR==names(.activeGroupData_DF)[col]) {
@@ -133,7 +169,6 @@ MANAGER=setRefClass("MANAGER",
 			
 			# extract existing errors in cell
 			cellErrors=.errors_LST[
-				laply(.errors_LST, function(x) {return(x$.row_INT)})==row &
 				laply(.errors_LST, function(x) {return(x$.col_INT)})==col
 			]
 			
@@ -153,7 +188,12 @@ MANAGER=setRefClass("MANAGER",
 			# errors that were fixed but are now errors again
 			unfixedErrors=cellErrors[laply(cellErrors, function(x) {
 				return(
-					x$.status_CHR=="fixed" & any(
+					(
+						x$.status_CHR=="fixed" ||
+						(x$.status_CHR=="ignored" & includeIgnored)
+						
+						
+					) & any(
 						laply(currColErrors, function(z){return(z$.row_INT)})==x$.row_INT &
 						laply(currColErrors, function(z){return(z$.name_CHR)})==x$.name_CHR
 					)
@@ -171,10 +211,16 @@ MANAGER=setRefClass("MANAGER",
 			} else {
 				retLST$newErrors=currColErrors[
 					laply(currColErrors, function(x) {
-						laply(cellErrors, function(z){return(z$.name_CHR)})!=x$.name_CHR
+						all(
+							laply(cellErrors, function(z){return(z$.row_INT)})!=x$.row_INT &
+							laply(cellErrors, function(z){return(z$.col_INT)})!=x$.col_INT &
+							laply(cellErrors, function(z){return(z$.name_CHR)})!=x$.name_CHR
+						)
 					})
 				]
 			}
+			
+			# store new errors
 			if (length(retLST$newErrors)>0) {
 				names(retLST$newErrors)=laply(retLST$newErrors, function(z){return(z$.id_CHR)})
 				.errors_LST<<-append(.errors_LST,retLST$newErrors)

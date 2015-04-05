@@ -39,6 +39,7 @@ createDataTable<-function(session, outputId) {
   structure(c(
 	stub(render(data)),
 	stub(filter(row)),
+	stub(omitRow(row, status)),
 	stub(highlight(row, col, color)),
 	stub(update(row, col, value))
   ), class = "datatable_widget")

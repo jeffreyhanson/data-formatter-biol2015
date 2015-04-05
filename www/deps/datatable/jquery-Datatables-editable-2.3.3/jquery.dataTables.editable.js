@@ -375,17 +375,21 @@ returns true if plugin should continue with sending AJAX request, false will abo
                         } catch (ex) {
                         }
                         //cells.editable(sUpdateURL, oColumnSettings);
+                        
                         cells.each(function () {
-                            if (!$(this).hasClass(properties.sReadOnlyCellClass)) {
-                                $(this).editable(sUpdateURL, oColumnSettings);
+				if (!$(this).hasClass(properties.sReadOnlyCellClass)) {
+					$(this).editable(sUpdateURL, oColumnSettings);
                             }
                         });
                     }
 
                 } //end for
             } else {
+		    
                 cells = $('td:not(.' + properties.sReadOnlyCellClass + ')', aoNodes);
                 cells.editable(properties.sUpdateURL, $.extend({}, oDefaultEditableSettings, properties.oEditableSettings));
+		
+		
             }
         }
 
@@ -1045,6 +1049,10 @@ returns true if plugin should continue with sending AJAX request, false will abo
         return this.each(function () {
             var sTableId = oTable.dataTableSettings[0].sTableId;
             //KEYTABLE
+	    
+	    console.log('jquery-editable: 5.1');
+
+	    
             if (properties.bUseKeyTable) {
                 var keys = new KeyTable({
                     "table": document.getElementById(sTableId),
@@ -1054,8 +1062,10 @@ returns true if plugin should continue with sending AJAX request, false will abo
 
                 /* Apply a return key event to each cell in the table */
                 keys.event.action(null, null, function (nCell) {
+			
                     if( $(nCell).hasClass(properties.sReadOnlyCellClass))
                         return;
+		    
                     /* Block KeyTable from performing any events while jEditable is in edit mode */
                     keys.block = true;
                     /* Dispatch click event to go into edit mode - Saf 4 needs a timeout... */
@@ -1063,11 +1073,6 @@ returns true if plugin should continue with sending AJAX request, false will abo
                     //properties.bDisableEditing = true;
                 });
             }
-
-
-
-
-
 
             //KEYTABLE
 

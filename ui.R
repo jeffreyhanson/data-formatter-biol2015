@@ -51,6 +51,10 @@ shinyUI(fluidPage(
 				background-color: #BAE8BA !important;
 			}
 			
+			.status-omit {
+				background-color: #61605f !important;
+			}
+			
 			.list-element-label {
 				display:inline-block;
 				float:left;
@@ -181,7 +185,7 @@ shinyUI(fluidPage(
 		tags$script(src="deps/datatable/DataTables-1.10.5/media/js/jquery.dataTables.min.js"),
 		tags$script(src="deps/datatable/DataTables-1.10.5/extensions/TableTools/js/dataTables.tableTools.min.js"),
 		tags$script(src="deps/datatable/jquery-Datatables-editable-2.3.3/jquery.dataTables.editable.js"),
-		tags$script(src="deps/datatable/DataTables-1.10.5/extensions/FixedHeader/js/dataTables.fixedHeader.min.js"	),
+		tags$script(src="deps/datatable/DataTables-1.10.5/extensions/FixedHeader/js/dataTables.fixedHeader.min.js"),
 		tags$script(src="deps/datatable/jquery_jeditable-1.7.3/jquery.jeditable.js"),
 		tags$script(src="deps/list/Sortable.min.js"),
 		tags$script(src="deps/list/bindings.js"),
@@ -219,6 +223,13 @@ shinyUI(fluidPage(
 
 				function zoomItem(id) {
 					Shiny.onInputChange("zoomItem", {
+						"id":id,
+						".nonce":Math.random()
+					})
+				}
+				
+				function swapOmission(id) {
+					Shiny.onInputChange("swapOmission", {
 						"id":id,
 						".nonce":Math.random()
 					})

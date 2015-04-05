@@ -25,7 +25,7 @@
 				
 				// initialise fields
 				datatables[datatable.id]=datatable;
-				ids.push(datatable.id);
+				ids.push(datatable.id);				
 			}
 		}
 	});
@@ -68,8 +68,10 @@
 		
 		// set datatable filters
 		this.activeRows=[];
+		this.omitRows=[];
 		for (var i=0; i<data[Object.keys(data)[0]].length; i++) {
 			this.activeRows.push(i);
+			this.omitRows.push(false);
 		}
 				
 		$.fn.dataTableExt.afnFiltering.push(
@@ -83,6 +85,7 @@
 		this.highlightCol=[];
 		this.highlightColor=[];
 
+		
 		// initialise datatable
 		var currId=this.id;
 		var currDataTable = $('#'+this.id).dataTable({
@@ -92,66 +95,86 @@
 			"columnDefs": [{
 				"searchable": false,
 				"orderable": false,
-				"targets": 0
+				"targets": [0,1]
 			}],
 			"order": [[ 1, 'asc' ]],
 			"fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
-				// get columns numbers for items
-				var idxs=[];
-				var idx=datatables[ids[0]].highlightRow.indexOf(aData[0]-1);
-				while (idx>-1) {
-					idxs.push(idx);
-					idx=datatables[ids[0]].highlightRow.indexOf(aData[0]-1, idx+1);
-				}
 				
-				// add color classes
-				var secondaryColor;
-				if (idxs.length>0) {
-					
-					// remove all colors from cells
-					$(nRow).removeClass('status-error-secondary status-ignored-secondary status-fixed-secondary');
-					
-					// create subset arrays
-					var curr_highlightCol=[];
-					var curr_highlightColor=[];
-					for (var i=0; i<idxs.length; ++i) {
-						curr_highlightCol.push(datatables[ids[0]].highlightCol[idxs[i]]);
-						curr_highlightColor.push(datatables[ids[0]].highlightColor[idxs[i]]);
+				if (!datatables[ids[0]].omitRows[aData[1]]) {
+					//// if row is not set to be omitted
+					// get columns numbers for items
+					var idxs=[];
+					var idx=datatables[ids[0]].highlightRow.indexOf(aData[1]-1);
+					while (idx>-1) {
+						idxs.push(idx);
+						idx=datatables[ids[0]].highlightRow.indexOf(aData[1]-1, idx+1);
 					}
 					
-					// apply secondary colors to cells in row without items
+					// add color classes
 					var secondaryColor;
-					if (curr_highlightColor.indexOf('status-error')>-1) {
-						secondaryColor='status-error-secondary';
-					} else if (curr_highlightColor.indexOf('status-ignored')>-1) {
-						secondaryColor='status-ignored-secondary';
-					} else if (curr_highlightColor.indexOf('status-fixed')>-1) {
-						secondaryColor='status-fixed-secondary';
-					} else {
-						console.log('unknown status = '+curr_highlightColor);
-					}
-					$(nRow).addClass(secondaryColor);
-					
-					// apply primary colors to cell in row with items
-					$(nRow).children().each(function (index, td) {
-						var j=curr_highlightCol.indexOf(index);
-						if (j>-1) {
-							$(this).removeClass('status-error-primary status-error-secondary status-ignored-primary status-ignored-secondary status-fixed-primary status-fixed-secondary');
-							$(this).addClass(curr_highlightColor[j]+'-primary');
-						} else {
-							if (!(
-								$(this).hasClass('status-error-primary') ||
-								$(this).hasClass('status-ignored-primary') ||
-								$(this).hasClass('status-fixed-primary')
-							)) {
-								$(this).removeClass('status-error-secondary status-ignored-secondary status-fixed-secondary');
-								$(this).addClass(secondaryColor);
-							}
+					if (idxs.length>0) {
+						
+						// remove all colors from cells
+						$(nRow).removeClass('status-error-secondary status-ignored-secondary status-fixed-secondary status-omit read_only');
+						
+						// create subset arrays
+						var curr_highlightCol=[];
+						var curr_highlightColor=[];
+						for (var i=0; i<idxs.length; ++i) {
+							curr_highlightCol.push(datatables[ids[0]].highlightCol[idxs[i]]);
+							curr_highlightColor.push(datatables[ids[0]].highlightColor[idxs[i]]);
 						}
+						
+						// apply secondary colors to cells in row without items
+						var secondaryColor;
+						if (curr_highlightColor.indexOf('status-error')>-1) {
+							secondaryColor='status-error-secondary';
+						} else if (curr_highlightColor.indexOf('status-ignored')>-1) {
+							secondaryColor='status-ignored-secondary';
+						} else if (curr_highlightColor.indexOf('status-fixed')>-1) {
+							secondaryColor='status-fixed-secondary';
+						} else {
+							console.log('unknown status = '+curr_highlightColor);
+						}
+						$(nRow).addClass(secondaryColor);
+						
+						// apply primary colors to cell in row with items
+						$(nRow).children().each(function (index, td) {
+							var j=curr_highlightCol.indexOf(index);
+							if (j>-1) {
+								$(this).removeClass('status-error-primary status-error-secondary status-ignored-primary status-ignored-secondary status-fixed-primary status-fixed-secondary status-omit read_only');
+								$(this).addClass(curr_highlightColor[j]+'-primary');
+							} else {
+								if (!(
+									$(this).hasClass('status-error-primary') ||
+									$(this).hasClass('status-ignored-primary') ||
+									$(this).hasClass('status-fixed-primary')
+								)) {
+									$(this).removeClass('status-error-secondary status-ignored-secondary status-fixed-secondary status-omit read_only');
+									$(this).addClass(secondaryColor);
+								}
+							}
+						});
+					}
+				} else {
+					//// if row is set to be omitted
+					$(nRow).removeClass('status-error-primary status-error-secondary status-ignored-primary status-ignored-secondary status-fixed-primary status-fixed-secondary status-omit read_only');
+					$(nRow).addClass('status-omit read_only');
+
+					$(nRow).children().each(function (index, td) {
+						$(this).removeClass('status-error-primary status-error-secondary status-ignored-primary status-ignored-secondary status-fixed-primary status-fixed-secondary status-omit read_only');
+						$(this).addClass('status-omit read_only');
 					});
 				}
 			}
 		}).makeEditable({
+			sReadOnlyCellClass: "read_only",
+			fnOnEditing: function(jInput, oEditableSettings, sOriginalText, id) {
+				if (jInput.parents('tr').hasClass('read_only'))
+					jInput["0"].value=sOriginalText;
+					
+				return (true);
+			},
 			sUpdateURL: function(value, settings) {
 				Shiny.onInputChange(currId + '_update', {
 					row: currDataTable.fnGetPosition(this)[0]+1,
@@ -176,6 +199,13 @@
 		// set activeRows as new row
 		this.activeRows=row;
 		// force table to redraw
+		this.jtable.fnDraw();
+	};
+	
+	methods.omitRow=function(row, status) {
+		// set omit row
+		this.omitRows[row]=status;
+		// redraw table
 		this.jtable.fnDraw();
 	};
 	
