@@ -39,9 +39,11 @@ createList<-function(session, outputId) {
   structure(c(
 	stub(reloadView()),
 	stub(setView(status,force_reset)),
-	stub(addItem(id, item, status, force_reset)),
-	stub(updateItem(id, item, status, force_reset)),
-	stub(removeItem(id, force_reset))
+	stub(addItem(id, item, status, key, force_reset)),
+	stub(updateItem(id, item, status, key, force_reset)),
+	stub(removeItem(id, force_reset)),
+	stub(filterItems(ids, force_reset))
+	
   ), class = "list_widget")
 }
 
@@ -63,7 +65,7 @@ ListHtmlRepr=function(outputId, options=NULL) {
 				))
 			),
 			tags$div(id=outputId, class="list-widget-output",
-				tags$div(id=paste0(outputId,"_btns_div"), class="list-btns-div",
+				tags$div(id=paste0(outputId,"_btns_div"), class="list-btns-div center",
 					HTML('
 						<div class="btn-group" data-toggle="buttons">
 							<label class="btn btn-default">

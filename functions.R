@@ -20,7 +20,6 @@ convert2bool=function(x) {
 }
 
 phrase_FUN=function(x, last_word="or") {
-	x=paste0('"',x,'"')
 	return(paste0(paste(x[seq_len(length(x)-1)], collapse=", "), ", ", last_word, " ", x[length(x)]))
 }
 

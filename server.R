@@ -43,7 +43,7 @@ shinyServer(function(input,output,session) {
 	})
 	observe({
 		if(is.empty(input$project_name_CHR))
-			return()			
+			return()
 		isolate({
 			manager$setActiveProjectName(input$project_name_CHR)
 			if (manager$isDirFieldsValid()) {
@@ -70,7 +70,6 @@ shinyServer(function(input,output,session) {
 		})
 	})
 	
-	
 	## make load button active/inactive
 	observe({
 		if(is.empty(input$group_names_VCHR)) {
@@ -86,7 +85,7 @@ shinyServer(function(input,output,session) {
 			})
 		}
 	})
-			
+
 	## load data
 	observe({
 		if(is.null(input$load_data_BTN) || input$load_data_BTN==0)
@@ -99,21 +98,19 @@ shinyServer(function(input,output,session) {
 				# scan data for errors
 				manager$scanDataForErrors()
 				# add errors to widget
-				for (i in seq_along(manager$.errors)) {
-					listwidget$addItem(manager$.errors[[i]]$.id, manager$.errors[[i]]$repr(), manager$.errors[[i]]$.status, FALSE)
+				for (i in seq_along(manager$.errors_LST)) {
+					listwidget$addItem(manager$.errors_LST[[i]]$.id_CHR, manager$.errors_LST[[i]]$repr(), manager$.errors_LST[[i]]$.status_CHR, manager$.errors_LST[[i]]$key(), FALSE)
 				}
 				listwidget$reloadView()
 				# show data
 				tmp=manager$getActiveGroupsData()
 				dtwidget$render(tmp$data)
-				for (i in seq_along(tmp$row))
-					dtwidget$highlight(row=tmp$row[i],col=tmp$col[i],color=tmp$color[i])
+				dtwidget$highlight(row=tmp$highlight_row,col=tmp$highlight_col,color=tmp$highlight_color)
 				output$mainpanelUI=renderUI({dataUI})
 				# change sidebar
 				output$sidebartype=renderText({'error_list_panel'})
 			}
 		})
-		
 	})
 		
 	## zoom item
@@ -125,7 +122,9 @@ shinyServer(function(input,output,session) {
 			tmp=manager$getDataWithSpecificError(input$zoomItem$id)
 			# data table widget
 			dtwidget$filter(tmp$row)
-			dtwidget$highlight(row=tmp$row,col=tmp$col,color=tmp$color)
+			dtwidget$highlight(row=tmp$highlight_row,col=tmp$highlight_col,color=tmp$highlight_color)
+			# filter list widget
+			listwidget$filterItems(input$zoomItem$id, TRUE)
 		})
 	})
 	
@@ -138,9 +137,39 @@ shinyServer(function(input,output,session) {
 			tmp=manager$getActiveGroupsData(input$listStatus$view)
 			# data table widget
 			dtwidget$filter(tmp$row)
-				dtwidget$highlight(row=tmp$row[i],col=tmp$col[i],color=tmp$color[i])
+			dtwidget$highlight(row=tmp$highlight_row,col=tmp$highlight_col,color=tmp$highlight_color)
 			# list widget
 			listwidget$setView(input$listStatus$view,TRUE)
+		})
+	})
+	
+	## update cell value
+	observe({
+		if(is.null(input$dt_widget_update))
+			return()
+		isolate({
+			# update value
+			manager$.activeViewData_DF[[input$dt_widget_update$col]][match(input$dt_widget_update$row,manager$.activeViewData_DF$Row)]<<-as(input$dt_widget_update$value, class(manager$.activeViewData_DF[[input$dt_widget_update$col]]))
+			manager$.activeGroupData_DF[[input$dt_widget_update$col]][input$dt_widget_update$row]<<-as(input$dt_widget_update$value, class(manager$.activeViewData_DF[[input$dt_widget_update$col]]))
+			
+			# rescan for errors
+			retErrors=manager$scanCellForErrors(input$dt_widget_update$row,input$dt_widget_update$col)
+			
+			# update widgets with updated errors
+			for (i in seq_along(retErrors$updatedErrors))
+				listwidget$updateItem(retErrors$updatedErrors[[i]]$.id_CHR, retErrors$updatedErrors[[i]]$repr(), retErrors$updatedErrors[[i]]$.status_CHR, retErrors$updatedErrors[[i]]$key(), FALSE)
+
+			# update widgets with new errors
+			for (i in seq_along(retErrors$newErrors))
+				listwidget$addItem(retErrors$newErrors[[i]]$.id_CHR, retErrors$newErrors[[i]]$repr(), retErrors$newErrors[[i]]$.status_CHR, retErrors$newErrors[[i]]$key(), FALSE)
+					
+			# highlight cells
+			tmp=manager$getActiveGroupsData()
+			dtwidget$highlight(row=tmp$highlight_row,col=tmp$highlight_col,color=tmp$highlight_color)
+			
+			# reload list widget
+			listwidget$reloadView()
+			
 		})
 	})
 	
@@ -149,15 +178,43 @@ shinyServer(function(input,output,session) {
 		if (is.null(input$swapIgnoreItem))
 			return()
 		isolate({
-			if (manager$.errors[[input$swapIgnoreItem$id]]$.status=='error' || manager$.errors[[input$swapIgnoreItem$id]]$.status=='ignored') {
-				manager$.errors[[input$swapIgnoreItem$id]]$swapIgnore()
-				listwidget$updateItem(input$swapIgnoreItem$id, manager$.errors[[input$swapIgnoreItem$id]]$repr(), manager$.errors[[input$swapIgnoreItem$id]]$.status, TRUE)
-				if (manager$.activeView=="ignored" || manager$.activeView=="error")
-					listwidget$reloadView()
-			}
+			# update list widget
+			manager$.errors_LST[[input$swapIgnoreItem$id]]$swapIgnore()
+			listwidget$updateItem(input$swapIgnoreItem$id, manager$.errors_LST[[input$swapIgnoreItem$id]]$repr(), manager$.errors_LST[[input$swapIgnoreItem$id]]$.status_CHR, manager$.errors_LST[[input$swapIgnoreItem$id]]$key(), TRUE)
+			# update datatable widget
+			tmp=manager$getActiveGroupsData()
+			dtwidget$filter(tmp$row)
+			dtwidget$highlight(row=tmp$highlight_row,col=tmp$highlight_col,color=tmp$highlight_color)
 		})
 	})
 
+	## swap row omission status
+	observe({
+		if (is.null(input$swapOmission))
+			return()
+		isolate ({
+			# update manager
+			retErrors=manager$swapOmission(as.integer(input$swapOmission$id))
+			
+			# update list widget
+			for (i in seq_along(retErrors$updatedErrors)) {
+				listwidget$updateItem(retErrors$updatedErrors[[i]]$.id_CHR, retErrors$updatedErrors[[i]]$repr(), retErrors$updatedErrors[[i]]$.status_CHR, retErrors$updatedErrors[[i]]$key(), FALSE)
+			}
+			
+			for (i in seq_along(retErrors$newErrors)) {
+				listwidget$addItem(retErrors$newErrors[[i]]$.id_CHR, retErrors$newErrors[[i]]$repr(), retErrors$newErrors[[i]]$.status_CHR, retErrors$newErrors[[i]]$key(), FALSE)
+			}
+			listwidget$reloadView()
+
+			# update datatable widget
+			tmp=manager$getActiveGroupsData()
+			dtwidget$filter(tmp$row)
+			dtwidget$omitRow(input$swapOmission$id, manager$.omittedRows_BOL[as.integer(input$swapOmission$id)])
+			dtwidget$highlight(row=tmp$highlight_row,col=tmp$highlight_col,color=tmp$highlight_color)
+		})
+	})
+	
+	
 	## save data
 	observe({
 		if (is.null(input$submit_data_BTN) || input$submit_data_BTN==0)

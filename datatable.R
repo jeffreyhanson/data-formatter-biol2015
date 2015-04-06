@@ -39,6 +39,7 @@ createDataTable<-function(session, outputId) {
   structure(c(
 	stub(render(data)),
 	stub(filter(row)),
+	stub(omitRow(row, status)),
 	stub(highlight(row, col, color)),
 	stub(update(row, col, value))
   ), class = "datatable_widget")
@@ -64,7 +65,7 @@ DataTableHtmlRepr=function(outputId, options=NULL) {
 				))
 			),
 			
-			tags$table(id=outputId, class="row-border hover order-column datatable-widget-output", cellspacing="0", width="100%",
+			tags$table(id=outputId, class="row-border hover order-column full-width content-scrollable datatable-widget-output", cellspacing="0", width="100%",
 				tags$script(
 					type="application/json", class="datatable-options",
 					ifelse(is.null(options), "{}", RJSONIO::toJSON(options))			
