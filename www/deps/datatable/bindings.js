@@ -21,6 +21,13 @@
 				);
 				
 				datatable.table=document.getElementById(datatable.id);
+				datatable.head=document.createElement("thead");
+				datatable.body=document.createElement("tbody");
+				datatable.foot=document.createElement("tfoot");
+				
+				datatable.table.innerHTML=datatable.head;
+				datatable.table.innerHTML+=datatable.body;
+				datatable.table.innerHTML+=datatable.foot;
 				
 				// initialise fields
 				datatables[datatable.id]=datatable;
@@ -30,6 +37,15 @@
 
 				console.log('table');
 				console.log(datatable.table);
+
+				console.log('head');
+				console.log(datatable.head);
+
+				console.log('body');
+				console.log(datatable.body);
+
+				console.log('foot');
+				console.log(datatable.foot);
 				
 			}
 		}
@@ -51,54 +67,68 @@
 	
 	// define methods
 	methods.render=function(data) {
-		// prepare datatable objects
-		// cell values
-		var dataSet=[];
-		var tmp=[];
-		for (i=0; i<data[Object.keys(data)[0]].length; i++) {
+		// reset
+		this.head.innerHTML='';
+		this.foot.innerHTML='';
+		this.body.innerHTML='';
+		
+		// load data
+		var tmp_html;
+		var tmp2_html;
+		for (i in data) {
 			// init
-			tmp=[];
-			// add column data
-			for (j in data)
-				tmp.push(data[j][i]);
-			// store array
-			dataSet.push(tmp);
+			tmp_html=document.createElement("tr");
+			tmp_html2=document.createElement("th");
+			tmp_html2.innerHTML=i;
+			tmp_html.innerHTML+=tmp2_html;
+			// head
+			this.head.innerHTML+=tmp_html;
+			// foot
+			this.foot.innerHTML+=tmp_html;
 		}
-		// column names
-		var colnames=[];
-		for (j in data) {
-			colnames.push({'title': j.replace(/\./g, ' ')});
+		for (j=0; j<data[Object.keys(data)[0]].length; j++) {
+			// init
+			tmp_html=document.createElement("tr");
+			// add row
+			for (i in data) {
+				tmp2_html=document.createElement("td");
+				tmp2_html.innerHTML=data[i][j];
+				tmp_html.innerHTML+=tmp2_html;
+			}
+			this.body.innerHTML+=tmp_html;
 		}
 		
 		// initialise datatable
-		var currId=this.id;
-		var currDataTable = $('#'+this.id).dataTable({
-			"data": dataSet,
-			"columns": colnames
-		}).makeEditable({
-			sUpdateURL: function(value, settings) {
-				Shiny.onInputChange(currId + '_update', {
-					row: currDataTable.fnGetPosition(this)[0],
-					col: currDataTable.fnGetPosition(this)[2]+1,
-					value: value,
-					'.nonce': Math.random() // Force reactivity
-				});
-				return(value);
-			}
-		});
+		console.log('start init datable jquery');
+		$(this.id).dataable();
+		console.log('end init datable jquery');
 	};
 
 	methods.filter=function(row) {
-		console.log(2);	
+		console.log(2);
+	
+
+	
 	};
+
 	
 	methods.highlight=function(row, col, color) {
 		console.log(3);
+	
+	
+	
 	};
 		
 	methods.update=function(row, col, value) {
 		console.log(4);
+	
+	
+
 	};
+	
+
+
+
 	
 })();
 	

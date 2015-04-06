@@ -117,68 +117,9 @@ MANAGER=setRefClass("MANAGER",
 				.errors[laply(tempErrors, function(x){return(x$.id)})]<<-tempErrors
 			}
 		},
-		scanCellForErrors=function(row, col) {
-			# init
-			retLST=list()
-			# get all errrors in column
-			currColErrors=llply(.dataPrep$.errors_LST, function(x) {
-				if (x$.column==names(.activeGroupData_DF)[col]) {
-					cat('testing for',x$.name,'errors in',x$.column,'\n')
-					return(x$testForErrors(.activeGroupData_DF))
-				} else {
-					return(NULL)
-				}
-			}) %>% unlist(recursive=FALSE, use.names=FALSE)
-			print("currColErrors")
-			str(currColErrors)
-			# extract existing errors in cell
-			cellErrors=.errors[
-				laply(.errors, function(x) {return(x$.row)})==row &
-				laply(.errors, function(x) {return(x$.col)})==col
-			]
-			## check to see get errors that have been updated
-			# get fixed errors
-			fixedErrors=cellErrors[laply(cellErrors, function(x) {
-				return(
-					all(
-						laply(currColErrors, function(z){return(z$.row)})!=x$.row &
-						laply(currColErrors, function(z){return(z$.col)})!=x$.col &
-						laply(currColErrors, function(z){return(z$.name)})!=x$.name
-					)
-				)
-			})]
-			for (i in seq_along(fixedErrors))
-				.errors[fixedErrors[[i]]$.id]$.status<<-'fixed'
-			# errors that were fixed but are now errors again
-			unfixedErrors=cellErrors[laply(cellErrors, function(x) {
-				return(
-					x$.status=="fixed" & any(
-						laply(currColErrors, function(z){return(z$.row)})==x$.row &
-						laply(currColErrors, function(z){return(z$.col)})==x$.col &
-						laply(currColErrors, function(z){return(z$.name)})==x$.name
-					)
-				)
-			})]
-			retLST$updatedErrors=append(fixedErrors, unfixedErrors)
-			# check to see if new errors
-			if (length(cellErrors)==0) {
-				retLST$newErrors=currColErrors
-			} else {
-				retLST$newErrors=currColErrors[
-					laply(currColErrors, function(x) {
-						laply(cellErrors, function(z){return(z$.row)})!=x$.name
-					})
-				]
-			}
-			if (length(retLST$newErrors)>0)
-				.errors<<-append(.errors,retLST$newErrors)
-			# return error objects
-			return(retLST)
-		},
 		setErrorStatus=function(id, status) {
 			.errors[[id]]$.status<<-status
 		},
-
 
 		#### render data table methods
 		getFullProjectData=function() {
@@ -276,14 +217,12 @@ ERROR_GENERATOR=setRefClass("ERROR_GENERATOR",
 		.id="ID",
 		.name="character",
 		.description="character",
-		.column="character",
 		.test="function"
 	),
 	methods=list(
-		initialize=function(id, name, column, description, test) {
+		initialize=function(id, name, description, test) {
 			.id<<-id
 			.name<<-name
-			.column<<-column
 			.description<<-description
 			.test<<-test
 		},
@@ -296,14 +235,14 @@ ERROR_GENERATOR=setRefClass("ERROR_GENERATOR",
 )
 
 ERROR_TEMPLATE.FACTOR=function(column_name, values) {
-	return( ERROR_GENERATOR$new(id, "Invalid factor value.", column_name, paste0("Cell value should be: ",phrase_FUN(values),"."), function(inpDF) {
+	return( ERROR_GENERATOR$new(id, "Invalid factor value.", paste0("Cell value should be: ",phrase_FUN(values),"."), function(inpDF) {
 		rows=which(!inpDF[[column_name]] %in% values)
 		return(data.frame(row=rows, col=rep(match(column_name, names(inpDF)), length(rows))))
 	}))
 }
 
 ERROR_TEMPLATE.SEQUENCE.REPEATS=function(column_name, values, by) {
-	return(ERROR_GENERATOR$new(id, "Invalid value in sequence (repeats).", column_name, paste0("Cell value should be in the sequence: ",phrase_FUN(values, "then"),"."), function(inpDF) {
+	return(ERROR_GENERATOR$new(id, "Invalid value in sequence (repeats).", paste0("Cell value should be in the sequence: ",phrase_FUN(values, "then"),"."), function(inpDF) {
 		vals=inpDF[[column_name]]
 		names(vals)=seq_along(inpDF[[column_name]])
 		rows=tapply(vals, INDEX=llply(by, function(x){return(inpDF[[x]])}), simplify=FALSE, FUN=function(x) {
@@ -315,7 +254,7 @@ ERROR_TEMPLATE.SEQUENCE.REPEATS=function(column_name, values, by) {
 }
 
 ERROR_TEMPLATE.SEQUENCE.NO_REPEATS=function(column_name, values, by) {
-	return(ERROR_GENERATOR$new(id, "Invalid value in sequence (no repeats).", column_name, paste0("Cell value should be in the sequence: ",phrase_FUN(values, "then"),"."), function(inpDF) {
+	return(ERROR_GENERATOR$new(id, "Invalid value in sequence (no repeats).", paste0("Cell value should be in the sequence: ",phrase_FUN(values, "then"),"."), function(inpDF) {
 		vals=inpDF[[column_name]]
 		names(vals)=seq_along(inpDF[[column_name]])
 		rows=tapply(vals, INDEX=llply(by, function(x){return(inpDF[[x]])}), simplify=FALSE, FUN=function(x) {
@@ -328,14 +267,14 @@ ERROR_TEMPLATE.SEQUENCE.NO_REPEATS=function(column_name, values, by) {
 
 
 ERROR_TEMPLATE.TRUNCATED=function(column_name) {
-	return(ERROR_GENERATOR$new(id, "Invalid truncated value", column_name, paste0("Cell value should be greater than 0"), function(inpDF) {
+	return(ERROR_GENERATOR$new(id, "Invalid truncated value", paste0("Cell value should be greater than 0"), function(inpDF) {
 		rows=which(inpDF[[column_name]] < 0)
 		return(data.frame(row=rows, col=rep(match(column_name, names(inpDF)), length(rows))))
 	}))
 }
 
 ERROR_TEMPLATE.PERCENT=function(column_name) {
-	return(ERROR_GENERATOR$new(id, "Invalid percent value", column_name, "Cell value should be between 0-1", function(inpDF) {
+	return(ERROR_GENERATOR$new(id, "Invalid percent value", "Cell value should be between 0-1", function(inpDF) {
 		rows=inpDF[[column_name]]<0 || inpDF[[column_name]]>1
 		rows[is.na(rows)]=TRUE
 		rows=which(rows)
@@ -344,21 +283,21 @@ ERROR_TEMPLATE.PERCENT=function(column_name) {
 }
 
 ERROR_TEMPLATE.POISSON=function(column_name) {
-	return(ERROR_GENERATOR$new(id, "Invalid Poisson value", column_name, "Cell value should be integer and not less than 0", function(inpDF) {
+	return(ERROR_GENERATOR$new(id, "Invalid Poisson value", "Cell value should be integer and not less than 0", function(inpDF) {
 		rows=which(inpDF[[column_name]]<0 || round(inpDF[[column_name]])!=inpDF[[column_name]])
 		return(data.frame(row=rows, col=rep(match(column_name, names(inpDF)), length(rows))))
 	}))
 }
 
 ERROR_TEMPLATE.NORMAL=function(column_name) {
-	return(ERROR_GENERATOR$new(id, "Invalid normal value", column_name, "Cell value should not be a missing value", function(inpDF) {
+	return(ERROR_GENERATOR$new(id, "Invalid normal value", "Cell value should not be a missing value", function(inpDF) {
 		rows=which(is.na(inpDF[[column_name]]))
 		return(data.frame(row=rows, col=rep(match(column_name, names(inpDF)), length(rows))))
 	}))
 }
 
 ERROR_TEMPLATE.OUTLIER=function(column_name) {
-	return(ERROR_GENERATOR$new(id, "Potential outlier value", column_name, "Cell value might be an outlier", function(inpDF) {
+	return(ERROR_GENERATOR$new(id, "Potential outlier value", "Cell value might be an outlier", function(inpDF) {
 		rows=which(is.outlier(inpDF[[column_name]]))
 		return(data.frame(row=rows, col=rep(match(column_name, names(inpDF)), length(rows))))
 	}))

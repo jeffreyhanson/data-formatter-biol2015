@@ -1,7 +1,7 @@
 shinyUI(fluidPage(
 	tags$head(
 		tags$link(rel="stylesheet", type="text/css", href="deps/list/style.css"),
-		tags$link(rel="stylesheet", type="text/css", href="deps/list/font-awesome.css"),
+		tags$link(rel="stylesheet", type="text/css", href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css"),
 		tags$link(rel="stylesheet", type="text/css", href="deps/datatable/DataTables-1.10.5/media/css/jquery.dataTables.css"),
 		tags$style("
 
@@ -100,12 +100,9 @@ shinyUI(fluidPage(
 		)
 	),
 	tags$foot(
+		tags$script(src="https://rubaxa.github.io/Sortable/Sortable.js"),
 		tags$script(src="deps/datatable/DataTables-1.10.5/media/js/jquery.js"),
-		tags$script(src="deps/datatable/DataTables-1.10.5/media/js/jquery.dataTables.min.js"),
-		tags$script(src="deps/datatable/DataTables-1.10.5/extensions/TableTools/js/dataTables.tableTools.min.js"),
-		tags$script(src="deps/datatable/jquery-Datatables-editable-2.3.3/jquery.dataTables.editable.js"),
-		tags$script(src="deps/datatable/jquery_jeditable-1.7.3/jquery.jeditable.js"),
-		tags$script(src="deps/list/Sortable.min.js"),
+		tags$script(src="deps/datatable/DataTables-1.10.5/media/js/jquery.dataTables.js"),
 		tags$script(src="deps/list/bindings.js"),
 		tags$script(src="deps/datatable/bindings.js"),
 		tags$script(
