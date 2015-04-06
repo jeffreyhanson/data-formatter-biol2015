@@ -170,11 +170,12 @@
 		}).makeEditable({
 			sReadOnlyCellClass: "read_only",
 			fnOnEditing: function(jInput, oEditableSettings, sOriginalText, id) {
-				if (jInput.parents('tr').hasClass('read_only'))
+				if (jInput.parents('tr').hasClass('read_only')) {
 					jInput["0"].value=sOriginalText;
-					
-				return (true);
+				}
+				return(true);
 			},
+			fnShowError: function(errorText, action) {},
 			sUpdateURL: function(value, settings) {
 				Shiny.onInputChange(currId + '_update', {
 					row: currDataTable.fnGetPosition(this)[0]+1,

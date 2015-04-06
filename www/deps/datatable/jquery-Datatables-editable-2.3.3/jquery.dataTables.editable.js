@@ -219,7 +219,8 @@ returns true if plugin should continue with sending AJAX request, false will abo
                         }
 
                         if (!properties.fnOnEditing(input, settings, original.revert, fnGetCellID(original)))
-                            return false;
+							return false;
+						
                         var x = settings;
                         
                         //2.2.2 INLINE VALIDATION
@@ -229,9 +230,9 @@ returns true if plugin should continue with sending AJAX request, false will abo
                         if (settings.cssclass != null) {
                             input.addClass(settings.cssclass);
                         }
-                        if(settings.cssclass == null && settings.oValidationOptions == null){
+                        if (settings.cssclass == null && settings.oValidationOptions == null) {
                             return true;
-                        }else{
+                        } else {
                             if (!input.valid() || 0 == input.valid())
                                 return false;
                             else
