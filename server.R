@@ -86,7 +86,7 @@ shinyServer(function(input,output,session) {
 			})
 		}
 	})
-			
+
 	## load data
 	observe({
 		if(is.null(input$load_data_BTN) || input$load_data_BTN==0)
@@ -141,6 +141,35 @@ shinyServer(function(input,output,session) {
 				dtwidget$highlight(row=tmp$row[i],col=tmp$col[i],color=tmp$color[i])
 			# list widget
 			listwidget$setView(input$listStatus$view,TRUE)
+		})
+	})
+	
+	## update cell value
+	observe({
+		if(is.null(input$dt_widget_update))
+			return()
+		isolate({
+			# update value
+			str(input$dt_widget_update)
+			manager$.activeViewData_DF[[input$dt_widget_update$col]][input$dt_widget_update$row]<<-as(input$dt_widget_update$value, class(manager$.activeViewData_DF[[input$dt_widget_update$col]]))
+			manager$.activeGroupData_DF[[input$dt_widget_update$col]][as.numeric(rownames(manager$.activeViewData_DF)[input$dt_widget_update$row])]<<-as(input$dt_widget_update$value, class(manager$.activeViewData_DF[[input$dt_widget_update$col]]))
+			print(summary(manager$.activeGroupData_DF))
+			# rescan for errors
+			retErrors=manager$scanCellForErrors(as.numeric(rownames(manager$.activeViewData_DF))[input$dt_widget_update$row],input$dt_widget_update$col)
+			# update list widget with existing errors that have changed statuses
+			print('retErrors$updatedErrors')
+			str(retErrors$updatedErrors)
+			for (i in seq_along(retErrors$updatedErrors)) {
+				listwidget$updateItem(retErrors$updatedErrors[[i]]$.id, retErrors$updatedErrors[[i]]$repr(), retErrors$updatedErrors[[i]]$.status, FALSE)
+			}
+			# update list widget with new errors
+			print('retErrors$newErrors')
+			str(retErrors$newErrors)
+			for (i in seq_along(retErrors$newErrors)) {
+				listwidget$addItem(retErrors$newErrors[[i]]$.id, retErrors$newErrors[[i]]$repr(), retErrors$newErrors[[i]]$.status, FALSE)
+			}
+			# reload list widget
+			listwidget$reloadView()				
 		})
 	})
 	
