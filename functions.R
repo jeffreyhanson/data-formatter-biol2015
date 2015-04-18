@@ -5,7 +5,17 @@ make_dir_FUN=function(dir_CHR) {
 }
 
 init_dir_FUN=function() {
-	sapply(apply(expand.grid(week_numbers_VCHR,project_names_VCHR,group_colors_VCHR,c("raw","clean","formatted","compiled")),1,paste,collapse="/"), make_dir_FUN)
+	# create raw, clean, formatted dirs
+	sapply(c('raw', 'cleaned', 'formatted'), function(x) {	
+		sapply(apply(expand.grid(x, project_names_VCHR, week_numbers_VCHR, group_colors_VCHR),1,paste,collapse='/'), make_dir_FUN)
+	})
+	
+	# create compiled dirs
+	sapply(apply(expand.grid('compiled', project_names_VCHR, week_numbers_VCHR),1,paste,collapse='/'), make_dir_FUN)
+	
+	# create master dirs
+	sapply(apply(expand.grid('master', project_names_VCHR),1,paste,collapse='/'), make_dir_FUN)
+	
 }
 
 ### Miscellaneous functions

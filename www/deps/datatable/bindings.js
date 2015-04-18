@@ -88,16 +88,16 @@
 		
 		// initialise datatable
 		var currId=this.id;
-		var currDataTable = $('#'+this.id).dataTable({
+		this.jtable = $('#'+this.id).dataTable({
 			"data": dataSet,
 			"columns": colnames,
-			"sDom": 'r<"H"lf><"datatable-scroll"t><"F"ip>',
+// 			"sDom": 'r<"H"lf><"datatable-scroll"t><"F"ip>', // horizontal scroll bar
 			"columnDefs": [{
 				"searchable": false,
 				"orderable": false,
 				"targets": [0,1]
 			}],
-			"order": [[ 1, 'asc' ]],
+			"bAutoWidth": false, 
 			"fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
 				
 				if (!datatables[ids[0]].omitRows[aData[1]]) {
@@ -170,7 +170,7 @@
 		}).makeEditable({
 			sReadOnlyCellClass: "read_only",
 			fnOnEditing: function(jInput, oEditableSettings, sOriginalText, id) {
-				if (jInput.parents('tr').hasClass('read_only')) {
+				if (jInput.parents('tr').hasClass('read_only') || (jInput.parents('td').index()<2)) {
 					jInput["0"].value=sOriginalText;
 				}
 				return(true);
@@ -178,15 +178,14 @@
 			fnShowError: function(errorText, action) {},
 			sUpdateURL: function(value, settings) {
 				Shiny.onInputChange(currId + '_update', {
-					row: currDataTable.fnGetPosition(this)[0]+1,
-					col: currDataTable.fnGetPosition(this)[2]+1,
+					row: datatables[ids[0]].jtable.fnGetPosition(this)[0]+1,
+					col: datatables[ids[0]].jtable.fnGetPosition(this)[2]+1,
 					value: value,
 					'.nonce': Math.random() // Force reactivity
 				});
 				return(value);
 			}
-		});
- 		this.jtable=currDataTable;
+		}).stickyTableHeaders();
 	};
 
 	methods.filter=function(row) {

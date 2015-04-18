@@ -74,21 +74,72 @@ MANAGER=setRefClass("MANAGER",
 		isDirFieldsValid=function() {
 			return(!is.empty(.activeWeekNumber_CHR) & !is.empty(.activeProjectName_CHR) & !is.empty(.activeGroupColor_CHR))
 		},
+		isRawDataAvailable=function() {
+			currFILES=dir(file.path("raw", .activeProjectName_CHR, .activeWeekNumber_CHR, .activeGroupColor_CHR))
+			if (length(currFILES)>0) {
+				if (grepl('^.*.csv$', currFILES, ignore.case=TRUE)) {
+					return(TRUE)
+				}
+			}
+			return(FALSE)
+		},
 		isAllFieldsValid=function() {
 			return(!is.empty(.activeWeekNumber_CHR) & !is.empty(.activeProjectName_CHR) & !is.empty(.activeGroupColor_CHR) & !is.empty(.activeGroupNames_CHR))
 		},
 		
 		#### disk interface methods
 		loadProjectDataFromFile=function() {
-			.fullProjectData_DF<<-.dataPrep$prepareData(rbind.fill(llply(dir(file.path(.activeWeekNumber_CHR, .activeProjectName_CHR, .activeGroupColor_CHR, "raw"), full.names=TRUE),fread)))
+			currFILES=dir(file.path("raw", .activeProjectName_CHR, .activeWeekNumber_CHR, .activeGroupColor_CHR), '^.*.csv', ignore.case=TRUE, full.names=TRUE)
+			if (length(currFILES)>0) {
+				.dataPrep<<-get(.activeProjectName_CHR)
+				.fullProjectData_DF<<-.dataPrep$prepareData(rbind.fill(llply(currFILES,fread)))
+				return(TRUE)
+			} else {
+				.fullProjectData_DF<<-data.table(0)
+				return(FALSE)
+			}
 		},
 		saveDataToFile=function() {
+			# init
+			currFileName=paste0(paste(.activeGroupNames_CHR, collapse='_'), '.csv')
 			# save cleaned data
-			write.table(.activeGroupData_DF, file.path(.activeWeekNumber_CHR, .activeProjectName_CHR, .activeGroupColor_CHR, "cleaned"), sep=",", row.names=FALSE)
-			# save formatted data
-			write.table(.dataPrep$processData(.activeGroupData_DF), file.path(.activeWeekNumber_CHR, .activeProjectName_CHR, .activeGroupColor_CHR, "formatted"), sep=",", row.names=FALSE)
-			# save compiled data
-			write.table(rbind.fill(sapply(dir(file.path(.activeWeekNumber_CHR, .activeProjectName_CHR, .activeGroupColor_CHR, "formatted"),full.names=TRUE),fread)), file.path(.activeWeekNumber_CHR, .activeProjectName_CHR, .activeGroupColor_CHR, "compiled", "final.csv"), sep=",", row.names=FALSE)
+			write.table(
+				.activeGroupData_DF,
+				file.path("cleaned", .activeProjectName_CHR, .activeWeekNumber_CHR, .activeGroupColor_CHR, currFileName),
+				sep=",",
+				row.names=FALSE
+			)
+			# save formatted data for group
+			write.table(
+				.dataPrep$processData(.activeGroupData_DF, week=.activeWeekNumber_CHR, omitRows=.omittedRows_BOL),
+				file.path("formatted", .activeProjectName_CHR, .activeWeekNumber_CHR, .activeGroupColor_CHR, currFileName),
+				sep=",",
+				row.names=FALSE
+			)
+			# save compiled data for group
+			write.table(
+				rbind.fill(
+					sapply(
+						dir(file.path("formatted", .activeProjectName_CHR, .activeWeekNumber_CHR, .activeGroupColor_CHR), '^.*.csv$', ignore.case=TRUE, full.names=TRUE),
+						fread
+					)
+				), 
+				file.path("compiled", activeProjectName_CHR, .activeWeekNumber_CHR, paste0('group_', .activeGroupColor_CHR, "_data.csv")),
+				sep=",",
+				row.names=FALSE
+			)
+			# save master data set
+			write.table(
+				rbind.fill(
+					sapply(
+						dir(file.path("compiled", .activeProjectName_CHR, '^.*.csv$', ignore.case=TRUE, full.names=TRUE, recursive=TRUE)),
+						fread
+					)
+				), 
+				file.path("master", paste0("masterdata_",format(System.time(), '_%Y-%m-%d-%H-%M-%S'),".csv")),
+				sep=",",
+				row.names=FALSE
+			)
 		},
 		
 		### data manipulation methods
@@ -99,9 +150,7 @@ MANAGER=setRefClass("MANAGER",
 			.activeWeekNumber_CHR<<-week_number
 		},		
 		setActiveProjectName=function(project_name) {
-			project_name=sub(" ", "_", project_name)
-			.activeProjectName_CHR<<-project_name
-			.dataPrep<<-get(project_name)
+			.activeProjectName_CHR<<-sub(" ", "_", project_name)
 		},
 		setActiveGroupColor=function(group_color) {
 			.activeGroupColor_CHR<<-group_color
@@ -110,7 +159,8 @@ MANAGER=setRefClass("MANAGER",
 			.activeGroupNames_CHR<<-group_names
 		},
 		setActiveData=function() {
-			.activeGroupData_DF<<-.fullProjectData_DF %>% filter(Group %in% .activeGroupNames_CHR)			
+			.dataPrep<<-get(.activeProjectName_CHR)
+			.activeGroupData_DF<<-.fullProjectData_DF %>% filter(Group %in% .activeGroupNames_CHR)
 			.activeGroupData_DF$DeleteButton<<-paste0('
 				<button class="btn btn-default action-button btn-xs" id="delteBtn_', seq_len(nrow(.activeGroupData_DF)), '" name="', seq_len(nrow(.activeGroupData_DF)), '" type="button" onclick="swapOmission(name)" action="show">
 					<i class="fa fa-minus-circle" style="color:red"></i>

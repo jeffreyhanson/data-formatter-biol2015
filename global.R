@@ -1,4 +1,5 @@
 options(stringsAsFactors=TRUE, shiny.error=traceback)
+
 ## Load dependencies
 library(zoo)
 library(shiny)

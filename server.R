@@ -28,44 +28,36 @@ shinyServer(function(input,output,session) {
 	#### reactive handlers
 	## set manager fields
 	observe({
-		if(is.empty(input$week_number_CHR))
+		if(is.empty(input$week_number_CHR) & is.empty(input$project_name_CHR) & is.empty(input$group_color_CHR)) {
+			closeAlert(session,'loadingAlert')
 			return()
+		}
 		isolate({
-			manager$setActiveWeekNumber_CHR(input$week_number_CHR)
+			# set manager fields
+			if (!is.empty(input$week_number_CHR))
+				manager$setActiveWeekNumber_CHR(input$week_number_CHR)
+			if (!is.empty(input$project_name_CHR))
+				manager$setActiveProjectName(input$project_name_CHR)
+			if (!is.empty(input$group_color_CHR))
+				manager$setActiveGroupColor(input$group_color_CHR)
+			# try loading raw data
 			if (manager$isDirFieldsValid()) {
-				manager$loadProjectDataFromFile()
-				updateSelectInput("group_names_VCHR", choices=manager$getProjectGroupNames())
-				session$sendCustomMessage("setWidgetProperty",list(id="group_names_VCHR",prop="disabled", status=FALSE))
+				if (manager$isRawDataAvailable() & manager$loadProjectDataFromFile()) {
+					closeAlert(session,'loadingAlert')
+					updateSelectInput(session, "group_names_VCHR", choices=manager$getProjectGroupNames())
+					session$sendCustomMessage("setWidgetProperty",list(id="group_names_VCHR",prop="disabled", status=FALSE))
+				} else {
+					createAlert(
+						session,'alert','loadingAlert', title='Error', append=FALSE, style='danger',
+						content='Error loading data for specified week number, project name, and group color.\n\nPlease check that these details are correct. \n\nIf they are and you still receive this message, please ask your tutor for help.'
+					)
+					session$sendCustomMessage("setWidgetProperty",list(id="group_names_VCHR",prop="disabled", status=TRUE))
+					updateSelectInput(session, "group_names_VCHR", choices=c(""))
+				}
 			} else {
+				closeAlert(session,'loadingAlert')
 				session$sendCustomMessage("setWidgetProperty",list(id="group_names_VCHR",prop="disabled", status=TRUE))
-			}
-		})
-	})
-	observe({
-		if(is.empty(input$project_name_CHR))
-			return()
-		isolate({
-			manager$setActiveProjectName(input$project_name_CHR)
-			if (manager$isDirFieldsValid()) {
-				manager$loadProjectDataFromFile()
-				updateSelectInput("group_names_VCHR", choices=manager$getProjectGroupNames())
-				session$sendCustomMessage("setWidgetProperty",list(id="group_names_VCHR",prop="disabled", status=FALSE))
-			} else {
-				session$sendCustomMessage("setWidgetProperty",list(id="group_names_VCHR",prop="disabled", status=TRUE))
-			}
-		})
-	})
-	observe({
-		if(is.empty(input$group_color_CHR))
-			return()
-		isolate({
-			manager$setActiveGroupColor(input$group_color_CHR)
-			if (manager$isDirFieldsValid()) {
-				manager$loadProjectDataFromFile()
-				updateSelectInput(session,"group_names_VCHR", choices=manager$getProjectGroupNames())
-				session$sendCustomMessage("setWidgetProperty",list(id="group_names_VCHR",prop="disabled", status=FALSE))
-			} else {
-				session$sendCustomMessage("setWidgetProperty",list(id="group_names_VCHR",prop="disabled", status=TRUE))
+				updateSelectInput(session, "group_names_VCHR", choices=c(""))
 			}
 		})
 	})
@@ -224,4 +216,5 @@ shinyServer(function(input,output,session) {
 		})
 	})
 })
+
 

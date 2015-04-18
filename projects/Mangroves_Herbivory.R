@@ -87,7 +87,9 @@ Mangroves_Herbivory=DATA_PREP$new(
 		ERROR_TEMPLATE.POISSON("Number of Galls"),
 		ERROR_TEMPLATE.OUTLIER("Number of Galls")
 	),	
-	process=function(inpDF) {
+	process=function(inpDF, ...) {
+		if (!missing('omitRows'))
+			inpDF=inpDF[!omitRows,]
 		stemDF=inpDF[,
 			list(
 				Date=na.omit(first(Date)),
@@ -125,6 +127,8 @@ Mangroves_Herbivory=DATA_PREP$new(
 			),
 			by=list(Group, `Intertidal zone`, `Tape point`, Quarter)
 		]
+		if (!missing('week'))
+			quarterDF$Week=week
 		return(quarterDF)
 	}
 )

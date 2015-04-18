@@ -67,7 +67,7 @@ shinyUI(fluidPage(
 			.list-element-zoom {
 				display:inline-block;
 				float:right;
-				margin-right: 10%;
+				margin-right: 8% !important;
 				margin-top: 2%;
 				margin-bottom: 2%;
 			}
@@ -75,7 +75,7 @@ shinyUI(fluidPage(
 			.list-element-swapignore {
 				display:inline-block;
 				float:right;
-				margin-right: 3%;
+				margin-right: 2% !important;
 				margin-top: 2%;
 				margin-bottom: 2%;
 			}
@@ -104,26 +104,54 @@ shinyUI(fluidPage(
 				width: 100%;
 				text-align:center;
 			}
+			
+			th {
+				background-color: #fff !important;
+			}
+			
+			thead {
+				background-color: #fff !important;
+			}
+			
+			
+			
+			#page-wrap { 
+				width: 100%;
+				margin: 0px auto; 
+				position: relative; 
+			}
+
+			#sidebar {
+				width: 380px;
+				position: relative;
+				margin-top: 0px;
+				padding-top: 20px;
+				margin-left: 0px;
+				z-index: 100;
+			}
+			
+			#mainpage {
+				z-index: 50;
+				position: relative;
+			}
+			
+			
 		
 		")
 	),
-	tags$body(
+	tags$body(id="page-wrap",
 		sidebarLayout(
 			sidebarPanel(
 				conditionalPanel(
-					div(class='center', tags$h2(class='header', "Data Error Checker")),
 					condition="output.sidebartype == 'load_data_panel'",
+					div(class='center', tags$h2(class='header', "Data Error Checker")),
 					br(),
 					div(	
 						selectInput("week_number_CHR", "Week Number:", choices=week_numbers_VCHR, selected="week 1"),
 						selectInput("project_name_CHR", "Project:", choices=project_names_VCHR, selected="mangrove herbivory"),
 						selectInput("group_color_CHR", "Group Colour:", choices=group_colors_VCHR, selected="blue"),
 						selectInput("group_names_VCHR", "Group Name:", choices=c(""), multiple=TRUE, selectize=TRUE),
-						br(),
-
-						
-# 						bsActionButton("load_data_BTN", "Load Data", style='primary')
-
+						bsAlert("alert"),
 						div(class="center", 
 							tags$button(
 								id="load_data_BTN",
@@ -137,7 +165,7 @@ shinyUI(fluidPage(
 				),
 				conditionalPanel(
 					condition="output.sidebartype == 'error_list_panel'",
-					div(
+					div(id="sidebar", wellPanel(
 						ListHtmlRepr("list_widget"),
 						br(),
 						div(
@@ -161,20 +189,22 @@ shinyUI(fluidPage(
 						)
 
 					)
-				),
+				)),
 				div(style="visibility:hidden",h5(textOutput('sidebartype')))
 			),
 			mainPanel(
-				conditionalPanel(
-					condition="output.sidebartype == 'load_data_panel'",
-					div(
-						br()
-					)
-				),
-				conditionalPanel(
-					condition="output.sidebartype == 'error_list_panel'",
-					div(
-						DataTableHtmlRepr("dt_widget")
+				div(id="mainpage",
+					conditionalPanel(
+						condition="output.sidebartype == 'load_data_panel'",
+						div(
+							br()
+						)
+					),
+					conditionalPanel(
+						condition="output.sidebartype == 'error_list_panel'",
+						div(
+							DataTableHtmlRepr("dt_widget")
+						)
 					)
 				)
 			)
@@ -182,10 +212,12 @@ shinyUI(fluidPage(
 	),
 	tags$foot(
 		tags$script(src="deps/datatable/DataTables-1.10.5/media/js/jquery.js"),
+		tags$script(src="deps/sticky/src.js"),
 		tags$script(src="deps/datatable/DataTables-1.10.5/media/js/jquery.dataTables.min.js"),
 		tags$script(src="deps/datatable/DataTables-1.10.5/extensions/TableTools/js/dataTables.tableTools.min.js"),
 		tags$script(src="deps/datatable/jquery-Datatables-editable-2.3.3/jquery.dataTables.editable.js"),
 		tags$script(src="deps/datatable/DataTables-1.10.5/extensions/FixedHeader/js/dataTables.fixedHeader.min.js"),
+		tags$script(src="deps/datatable/stickyheaders.js"),
 		tags$script(src="deps/datatable/jquery_jeditable-1.7.3/jquery.jeditable.js"),
 		tags$script(src="deps/list/Sortable.min.js"),
 		tags$script(src="deps/list/bindings.js"),
