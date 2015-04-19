@@ -186,8 +186,8 @@ shinyUI(fluidPage(
 								tags$i(class="fa fa-cloud-upload"),
 								title="Finished correcting all the errors and want to submit data to the cloud?"
 							)
-						)
-
+						),
+						bsAlert("save_alert")
 					)
 				)),
 				div(style="visibility:hidden",h5(textOutput('sidebartype')))

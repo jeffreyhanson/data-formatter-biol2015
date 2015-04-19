@@ -88,7 +88,7 @@ Mangroves_Herbivory=DATA_PREP$new(
 		ERROR_TEMPLATE.OUTLIER("Number of Galls")
 	),	
 	process=function(inpDF, ...) {
-		if (!missing('omitRows'))
+		if (exists('omitRows'))
 			inpDF=inpDF[!omitRows,]
 		stemDF=inpDF[,
 			list(
@@ -106,7 +106,7 @@ Mangroves_Herbivory=DATA_PREP$new(
 				`Average percent of leaf missing`=mean(`Percent of leaf missing`,na.rm=TRUE),
 				`Number of leaves`=length(`Number of Galls`)
 			),
-			by=list(Group, `Intertidal zone`, `Tape point`, Quarter, Stems)
+			by=list(Group, `Intertidal zone`, `Tape point`, Quarter, Stem)
 		]
 		quarterDF=stemDF[,
 			list(
@@ -127,8 +127,8 @@ Mangroves_Herbivory=DATA_PREP$new(
 			),
 			by=list(Group, `Intertidal zone`, `Tape point`, Quarter)
 		]
-		if (!missing('week'))
-			quarterDF$Week=week
+		if (exists('Week'))
+			quarterDF$Week=Week
 		return(quarterDF)
 	}
 )

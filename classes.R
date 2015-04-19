@@ -34,8 +34,8 @@ DATA_PREP=setRefClass("DATA_PREP",
 				return(x$testForErrors(inpDF))
 			}))
 		},
-		processData=function(inpDF) {
-			return(.process_FUN(inpDF))
+		processData=function(inpDF, ...) {
+			return(.process_FUN(inpDF, ...))
 		}
 	)
 )
@@ -104,14 +104,14 @@ MANAGER=setRefClass("MANAGER",
 			currFileName=paste0(paste(.activeGroupNames_CHR, collapse='_'), '.csv')
 			# save cleaned data
 			write.table(
-				.activeGroupData_DF,
+				select(.activeGroupData_DF, -DeleteButton, -Row),
 				file.path("cleaned", .activeProjectName_CHR, .activeWeekNumber_CHR, .activeGroupColor_CHR, currFileName),
 				sep=",",
 				row.names=FALSE
 			)
 			# save formatted data for group
 			write.table(
-				.dataPrep$processData(.activeGroupData_DF, week=.activeWeekNumber_CHR, omitRows=.omittedRows_BOL),
+				.dataPrep$processData(.activeGroupData_DF, Week=.activeWeekNumber_CHR, omitRows=.omittedRows_BOL),
 				file.path("formatted", .activeProjectName_CHR, .activeWeekNumber_CHR, .activeGroupColor_CHR, currFileName),
 				sep=",",
 				row.names=FALSE
@@ -119,24 +119,26 @@ MANAGER=setRefClass("MANAGER",
 			# save compiled data for group
 			write.table(
 				rbind.fill(
-					sapply(
+					lapply(
 						dir(file.path("formatted", .activeProjectName_CHR, .activeWeekNumber_CHR, .activeGroupColor_CHR), '^.*.csv$', ignore.case=TRUE, full.names=TRUE),
-						fread
+						fread,
+						data.table=FALSE
 					)
 				), 
-				file.path("compiled", activeProjectName_CHR, .activeWeekNumber_CHR, paste0('group_', .activeGroupColor_CHR, "_data.csv")),
+				file.path("compiled", .activeProjectName_CHR, .activeWeekNumber_CHR, paste0('group_', .activeGroupColor_CHR, "_data.csv")),
 				sep=",",
 				row.names=FALSE
 			)
 			# save master data set
 			write.table(
 				rbind.fill(
-					sapply(
-						dir(file.path("compiled", .activeProjectName_CHR, '^.*.csv$', ignore.case=TRUE, full.names=TRUE, recursive=TRUE)),
-						fread
+					lapply(
+						dir(file.path("compiled", .activeProjectName_CHR), '^.*.csv$', ignore.case=TRUE, full.names=TRUE, recursive=TRUE),
+						fread,
+						data.table=FALSE						
 					)
 				), 
-				file.path("master", paste0("masterdata_",format(System.time(), '_%Y-%m-%d-%H-%M-%S'),".csv")),
+				file.path("master", .activeProjectName_CHR, paste0("masterdata_",format(Sys.time(), '%Y-%m-%d_%H-%M-%S'),".csv")),
 				sep=",",
 				row.names=FALSE
 			)
@@ -281,6 +283,15 @@ MANAGER=setRefClass("MANAGER",
 		},
 		setErrorStatus=function(id, status) {
 			.errors_LST[[id]]$.status_CHR<<-status
+		},
+		isAllErrorsResolved=function() {
+			return(
+				all(
+					sapply(.errors_LST, function(x) {
+						return(x$.status_CHR)
+					}) %in% c('fixed','ignored')
+				)
+			)
 		},
 		#### render data table methods
 		getFullProjectData=function() {

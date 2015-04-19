@@ -48,8 +48,8 @@ shinyServer(function(input,output,session) {
 					session$sendCustomMessage("setWidgetProperty",list(id="group_names_VCHR",prop="disabled", status=FALSE))
 				} else {
 					createAlert(
-						session,'alert','loadingAlert', title='Error', append=FALSE, style='danger',
-						content='Error loading data for specified week number, project name, and group color.\n\nPlease check that these details are correct. \n\nIf they are and you still receive this message, please ask your tutor for help.'
+						session,'alert','loadingAlert', title='Error', append=FALSE, type='danger',
+						message='Error loading data for specified week number, project name, and group color.\n\nPlease check that these details are correct. \n\nIf they are and you still receive this message, please ask your tutor for help.'
 					)
 					session$sendCustomMessage("setWidgetProperty",list(id="group_names_VCHR",prop="disabled", status=TRUE))
 					updateSelectInput(session, "group_names_VCHR", choices=c(""))
@@ -212,7 +212,25 @@ shinyServer(function(input,output,session) {
 		if (is.null(input$submit_data_BTN) || input$submit_data_BTN==0)
 			return()
 		isolate({
-			manager$saveDataToFile()
+			if (manager$isAllErrorsResolved()) {
+				# if all errors have been resolved:
+				# save data to file
+				manager$saveDataToFile()
+				# show message that data has been saved
+				createAlert(
+					session,'save_alert','successfulSaveAlert', title='Success', append=FALSE, type='success',
+					message='Data has been succesfully saved to the cloud.'
+				)
+				return(TRUE)
+			} else {
+			# if all errors have not been resolved:
+				# create error saying that all errors need to be resolved
+				createAlert(
+					session,'save_alert','failToSaveAlert', title='Error', append=FALSE, type='danger',
+					message='Data cannot be saved to the cloud until all issues have been resolved. This can be acheived by updating cell values or by marking issues as \'ignored\'.'
+				)
+				return(FALSE)
+			}
 		})
 	})
 })
