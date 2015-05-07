@@ -90,6 +90,7 @@ Mangroves_Herbivory=DATA_PREP$new(
 	process=function(inpDF, ...) {
 		if (exists('omitRows'))
 			inpDF=inpDF[!omitRows,]
+		inpDF[['Tape Point']]=inpDF$TapePoint
 		stemDF=inpDF[,
 			list(
 				Date=na.omit(first(Date)),
@@ -127,8 +128,6 @@ Mangroves_Herbivory=DATA_PREP$new(
 			),
 			by=list(Group, `Intertidal zone`, `Tape point`, Quarter)
 		]
-		if (exists('Week'))
-			quarterDF$Week=Week
 		return(quarterDF)
 	}
 )

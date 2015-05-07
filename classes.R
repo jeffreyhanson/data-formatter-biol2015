@@ -111,7 +111,7 @@ MANAGER=setRefClass("MANAGER",
 			)
 			# save formatted data for group
 			write.table(
-				.dataPrep$processData(.activeGroupData_DF, Week=.activeWeekNumber_CHR, omitRows=.omittedRows_BOL),
+				transform(.dataPrep$processData(select(.activeGroupData_DF, -DeleteButton, -Row), omitRows=.omittedRows_BOL), Week=.activeWeekNumber_CHR),
 				file.path("formatted", .activeProjectName_CHR, .activeWeekNumber_CHR, .activeGroupColor_CHR, currFileName),
 				sep=",",
 				row.names=FALSE
@@ -150,7 +150,7 @@ MANAGER=setRefClass("MANAGER",
 		},
 		setActiveWeekNumber_CHR=function(week_number) {
 			.activeWeekNumber_CHR<<-week_number
-		},		
+		},
 		setActiveProjectName=function(project_name) {
 			.activeProjectName_CHR<<-sub(" ", "_", project_name)
 		},
@@ -201,6 +201,16 @@ MANAGER=setRefClass("MANAGER",
 		
 		#### error handling methods
 		scanDataForErrors=function() {
+			# tests
+			tmp=laply(.dataPrep$.errors_LST, function(x) {
+				return(x$.column_CHR)
+			}) 
+			if (any(!tmp %in% names(.activeGroupData_DF))) {
+				cat('project file incorrect; missing columns:')
+				print(tmp[!tmp %in% names(.activeGroupData_DF)])
+			}
+		
+			# main proc
 			tempErrors=.dataPrep$scanForErrors(.activeGroupData_DF) %>% unlist(recursive=TRUE, use.names=FALSE)
 			if (length(tempErrors)>0) {
 				.errors_LST[laply(tempErrors, function(x){return(x$.id_CHR)})]<<-tempErrors

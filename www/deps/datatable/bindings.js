@@ -99,7 +99,6 @@
 			}],
 			"bAutoWidth": false, 
 			"fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
-				
 				if (!datatables[ids[0]].omitRows[aData[1]]) {
 					//// if row is not set to be omitted
 					// get columns numbers for items
@@ -154,6 +153,11 @@
 									$(this).addClass(secondaryColor);
 								}
 							}
+						});
+					} else {
+						$(nRow).removeClass('status-error-primary status-error-secondary status-ignored-primary status-ignored-secondary status-fixed-primary status-fixed-secondary status-omit read_only');
+						$(nRow).children().each(function (index, td) {
+							$(this).removeClass('status-error-primary status-error-secondary status-ignored-primary status-ignored-secondary status-fixed-primary status-fixed-secondary status-omit read_only');
 						});
 					}
 				} else {

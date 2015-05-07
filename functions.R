@@ -23,6 +23,17 @@ is.empty=function(x) {
 	return(length(x)==0)
 }
 
+is.blank=function(x) {
+	if (all(is.na(x)))
+		return(TRUE)
+	if (is.character(x)) {
+		return(all(nchar(x)==0))
+	} else {
+		return(FALSE)
+	}
+}
+
+
 convert2bool=function(x) {
 	x=as.logical(x)
 	x[which(is.na(x))]=FALSE
@@ -36,3 +47,9 @@ phrase_FUN=function(x, last_word="or") {
 is.outlier=function(x) {
 	return(2<abs((x-mean(x,na.rm=TRUE))/sd(x,na.rm=TRUE)))
 }
+
+extractValue=function(inpDF, refCol, refValue, extractCol) {
+	return(last(inpDF[[extractCol]][which(inpDF[[refCol]]==refValue)]))
+}
+
+

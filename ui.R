@@ -91,7 +91,6 @@ shinyUI(fluidPage(
 				margin-right: auto;
 				width: 20%;
 			}
-						
 			
 			h2 {
 				text-transform: uppercase;
@@ -170,14 +169,14 @@ shinyUI(fluidPage(
 						br(),
 						div(
 							class='center',
-							tags$button(
-								id="scan_data_BTN",
-								type="button",
-								style="primary",
-								class="btn action-button btn-primary sbs-action-button btn-lg",
-								tags$i(class="fa fa-search"),
-								title="Rescan data for errors."
-							),
+# 							tags$button(
+# 								id="scan_data_BTN",
+# 								type="button",
+# 								style="primary",
+# 								class="btn action-button btn-primary sbs-action-button btn-lg",
+# 								tags$i(class="fa fa-search"),
+# 								title="Rescan data for errors."
+# 							),
 							tags$button(
 								id="submit_data_BTN",
 								type="button",
