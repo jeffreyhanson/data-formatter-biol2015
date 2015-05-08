@@ -10,6 +10,7 @@ library(devtools)
 library(plyr)
 library(dplyr)
 library(testthat)
+library(magrittr)
 
 ## Set global parameters
 # dir params

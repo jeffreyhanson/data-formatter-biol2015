@@ -42,6 +42,8 @@ shinyServer(function(input,output,session) {
 				manager$setActiveGroupColor(input$group_color_CHR)
 			# try loading raw data
 			if (manager$isDirFieldsValid()) {
+				manager$isRawDataAvailable()
+				manager$loadProjectDataFromFile()
 				if (manager$isRawDataAvailable() & manager$loadProjectDataFromFile()) {
 					closeAlert(session,'loadingAlert')
 					updateSelectInput(session, "group_names_VCHR", choices=manager$getProjectGroupNames())
@@ -86,14 +88,20 @@ shinyServer(function(input,output,session) {
 			manager$setActiveGroupNames(input$group_names_VCHR)
 			if (manager$isAllFieldsValid()) {
 				# set active data
+				print(1)
 				manager$setActiveData()
+				print(100)
 				# scan data for errors
+				print(200)
 				manager$scanDataForErrors()
 				# add errors to widget
+				print(300)
 				for (i in seq_along(manager$.errors_LST)) {
 					listwidget$addItem(manager$.errors_LST[[i]]$.id_CHR, manager$.errors_LST[[i]]$repr(), manager$.errors_LST[[i]]$.status_CHR, manager$.errors_LST[[i]]$key(), FALSE)
 				}
+				print(400)
 				listwidget$reloadView()
+				print(500)
 				# show data
 				tmp=manager$getActiveGroupsData()
 				dtwidget$render(tmp$data)

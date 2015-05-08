@@ -52,4 +52,3 @@ extractValue=function(inpDF, refCol, refValue, extractCol) {
 	return(last(inpDF[[extractCol]][which(inpDF[[refCol]]==refValue)]))
 }
 
-

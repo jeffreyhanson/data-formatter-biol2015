@@ -26,7 +26,13 @@ DATA_PREP=setRefClass("DATA_PREP",
 			.errors_LST<<-errors
 			.process_FUN<<-process
 		},
-		prepareData=function(inpDF) {
+		prepareData=function(inpDF) {		
+			if (!identical(sort(names(inpDF)),sort(names(.column_classes_LST)))) {
+				cat('column names in file are not recognised:')
+				cat('input file has extra columns:', names(inpDF)[which(!names(inpDF) %in% names(.column_classes_LST))], '\n')
+				cat('input file is missing columns:', names(inpDF)[which(!names(.column_classes_LST) %in% names(inpDF))], '\n')
+				stop('ERROR INCORRECT COLUMN NAMES IN PROJECT DATA FILE\n')
+			}
 			return(.format_FUN(as.data.table(Map(as, inpDF[,names(.column_classes_LST),with=FALSE], .column_classes_LST))))
 		},
 		scanForErrors=function(inpDF) {
@@ -89,15 +95,21 @@ MANAGER=setRefClass("MANAGER",
 		
 		#### disk interface methods
 		loadProjectDataFromFile=function() {
-			currFILES=dir(file.path("raw", .activeProjectName_CHR, .activeWeekNumber_CHR, .activeGroupColor_CHR), '^.*.csv', ignore.case=TRUE, full.names=TRUE)
+			print(401.1)
+			currFILES=dir(file.path("raw", .activeProjectName_CHR, .activeWeekNumber_CHR, .activeGroupColor_CHR), '^.*.csv$', ignore.case=TRUE, full.names=TRUE)
 			if (length(currFILES)>0) {
+				print(401.2)
 				.dataPrep<<-get(.activeProjectName_CHR)
-				.fullProjectData_DF<<-.dataPrep$prepareData(rbind.fill(llply(currFILES,fread)))
+				print(401.3)
+				.fullProjectData_DF<<-.dataPrep$prepareData(as.data.table(rbind.fill(llply(currFILES,fread))))
 				return(TRUE)
 			} else {
+				print(401.6)
 				.fullProjectData_DF<<-data.table(0)
+				print(401.7)
 				return(FALSE)
 			}
+			print(401.8)
 		},
 		saveDataToFile=function() {
 			# init
@@ -202,19 +214,25 @@ MANAGER=setRefClass("MANAGER",
 		#### error handling methods
 		scanDataForErrors=function() {
 			# tests
+			print(201)
 			tmp=laply(.dataPrep$.errors_LST, function(x) {
 				return(x$.column_CHR)
 			}) 
+			print(202)
 			if (any(!tmp %in% names(.activeGroupData_DF))) {
 				cat('project file incorrect; missing columns:')
 				print(tmp[!tmp %in% names(.activeGroupData_DF)])
 			}
-		
+			print(203)
+			
 			# main proc
+			print(204)
 			tempErrors=.dataPrep$scanForErrors(.activeGroupData_DF) %>% unlist(recursive=TRUE, use.names=FALSE)
+			print(205)
 			if (length(tempErrors)>0) {
 				.errors_LST[laply(tempErrors, function(x){return(x$.id_CHR)})]<<-tempErrors
 			}
+			print(206)
 		},
 		scanCellForErrors=function(row, col, includeIgnored=FALSE) {
 			# init
