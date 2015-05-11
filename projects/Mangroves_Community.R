@@ -41,8 +41,10 @@ Mangroves_Community=DATA_PREP$new(
 		ERROR_TEMPLATE.TRUNCATED("Circumference (cm)"),
 		ERROR_TEMPLATE.OUTLIER("Circumference (cm)")
 	),
-	process=function(inpDF) {
-		inpDF %>% calculate_PCQ_metrics(by=c('Transect','Zone')) %>% return()
+	process=function(inpDF, ...) {
+		if (exists('omitRows'))
+			inpDF=inpDF[!omitRows,]
+		inpDF %>% calculate_PCQ_metrics(columns=c('Transect','Zone','Group')) %>% return()
 	}
 )
 
@@ -51,59 +53,103 @@ Mangroves_Community=DATA_PREP$new(
 calculate_PCQ_metrics=function(inpDF, columns) {
 	## init
 	allSpeciesNames=c("Aegialitis annulata","Aegiceras corniculatum","Avicennia marina","Ceriops australis","Lumnitzera racemosa","Rhizophora stylosa","Osbornia octodonta","Other?")
-	inpDF$key=aaply(inpDF, 1, function(x){paste(x[,columns,with=FALSE,drop=TRUE])})
+	inpDF$key=aaply(inpDF, 1, .drop=TRUE, .expand=FALSE, function(x) {
+		return(
+			paste(
+				x[,columns,with=FALSE],
+				collapse='_'
+			)
+		)
+	})	
 	setkey(inpDF, key)
 	
 	## main processing
 	# calculate top level values
-	inpDF[,nSamples:=n_distinct(Group),by=key]
-	inpDF[,nQuarter:=n(),by=key]
-	inpDF[,meanDistBetweenTrees:=mean(`Distance from point (m)`, na.rm=TRUE),by=key]
-	inpDF[,densityAllSpp:=10000/(meanDistanceBetweenTrees^2),by=key]
-
+	inpDF[,nQuarters:=length(Group),by=key]
+	inpDF[,nPoints:=n_distinct(`Points within Zone`),by=key]
+	inpDF[,meanDistanceBetweenTrees:=mean(`Distance from point (m)`, na.rm=TRUE),by=key]
+	inpDF[,meanAverageDensityAllSpp:=10000/(meanDistanceBetweenTrees^2),by=key]
+	
 	# calculate species level data
-	sppDF=inpDF[,
+	inpDF[,
 		list(
 			Longitude=mean(Longitude,na.rm=TRUE),
 			Latitude=mean(Latitude,na.rm=TRUE),
+			Group=first(Group),
+			Transect=first(Transect),
+			Zone=first(Zone),
+			nQuarters=first(nQuarters),
+			nPoints=first(nPoints),
+			nTrees=length(Group),
+			meanAverageDensityAllSpp=mean(meanAverageDensityAllSpp),
+			meanDistanceBetweenTrees=mean(meanDistanceBetweenTrees),
 			Height=mean(`Height (m)`),
-			Freq=n(),
-			FreqPerQt=Freq/first(nQuarter),
-			TreesPerHA=FreqPerQt*first(densityAllSpp),
-			Density=n_distinct(Group)/first(nSamples),
-			BasalAreaPerHA=(mean(`Circumference (m)`, na.rm=TRUE) * TreesPerHA) / 10000
+			Frequency=n_distinct(`Points within Zone`),
+			`Mean Circumference (cm)`=mean(`Circumference (cm)`, na.rm=TRUE)
 		),
 		by=list(key, Species)
-	]
-	sppDF[,RelativeCover:=BasalAreaPerHA/sum(BasalAreaPerHA),]
-	sppDF[,RelativeFrequency:=FreqPerQt/sum(FreqPerQt),]
-	sppDF[,RelativeDensity:=Density*densityAllSpp,]
-	sppDF[,RelativeImportance=RelativeCover+RelativeFrequency+RelativeDensity,]
+	] %>% mutate(
+		`Frequency per Zone`=Frequency/nPoints,
+		`Trees per HA`=`Frequency per Zone`*meanAverageDensityAllSpp,
+		Density=(nTrees/nQuarters) * meanDistanceBetweenTrees,
+		`Basal Area per HA`=(`Mean Circumference (cm)` * `Trees per HA`) / 10000
+	) -> sppDF
+	sppDF[,`Relative Cover`:=`Basal Area per HA`/sum(`Basal Area per HA`),by=key]
+	sppDF[,`Relative Frequency`:=`Frequency per Zone`/sum(`Frequency per Zone`),by=key]
+	sppDF[,`Relative Density`:=nTrees/sum(nTrees),by=key]
+	sppDF[,`Relative Importance`:=(`Relative Cover`+`Relative Frequency`+`Relative Density`)/3,by=key]
+	sppDF %<>% select(
+		key,
+		Longitude,
+		Latitude,
+		Transect,
+		Zone,
+		Group,
+		Species,
+		Height,
+		`Mean Circumference (cm)`,
+		Frequency,
+		`Frequency per Zone`,
+		`Trees per HA`,
+		Density,
+		`Basal Area per HA`,
+		`Relative Cover`,
+		`Relative Frequency`,
+		`Relative Density`,
+		`Relative Importance`
+	)
 	
 	# add in missing species with zeros
 	sppDF[,
 		list(
 			Longitude=mean(Longitude,na.rm=TRUE),
 			Latitude=mean(Latitude,na.rm=TRUE),
-			Species=allSpeciesNames[!allSpeciesNames %in% Species]
+			Group=first(Group),
+			Transect=first(Transect),
+			Zone=first(Zone),
+			Species=allSpeciesNames[!allSpeciesNames %in% Species],
+			Height=NA,
+			`Mean Circumference (cm)`=NA,
+			Frequency=0,
+			`Frequency per Zone`=0,
+			`Trees per HA`=0,
+			Density=0,
+			`Basal Area per HA`=0,
+			`Relative Cover`=0,
+			`Relative Frequency`=0,
+			`Relative Density`=0,
+			`Relative Importance`=0
 		),
 		by=key
-	] %>% mutate(
-			Height=NA,
-			Freq=0,
-			FreqPerQt=0,
-			TreesPerHA=0,
-			Density=0,
-			BasalAreaPerHA=0,
-			RelativeCover=0,
-			RelativeFrequency=0,
-			RelativeDensity=0,
-			RelativeImportance=0
-	) %>% rbind(
+	] %>% rbind(
 		sppDF
 	) %>% arrange(
-		key
+		key,
+		Species
 	) %>% select(
-		-key, -nSamples, -nQuarter, -meanDistBetweenTrees, -densityAllSpp
+		-key
 	) %>% return()
 }
+
+
+	

@@ -12,6 +12,10 @@ bindEvent <- function(eventExpr, callback, env=parent.frame(), quoted=FALSE) {
 
 shinyServer(function(input,output,session) {
 	#### initialise
+	# touch the restart.txt file
+	try(system('touch /srv/shiny-server/data-formatter-biol2015/restart.txt'), silent=TRUE)
+	
+	
 	# set working directory
 	setwd(main_DIR)
 	init_dir_FUN()
@@ -88,20 +92,14 @@ shinyServer(function(input,output,session) {
 			manager$setActiveGroupNames(input$group_names_VCHR)
 			if (manager$isAllFieldsValid()) {
 				# set active data
-				print(1)
 				manager$setActiveData()
-				print(100)
 				# scan data for errors
-				print(200)
 				manager$scanDataForErrors()
 				# add errors to widget
-				print(300)
 				for (i in seq_along(manager$.errors_LST)) {
 					listwidget$addItem(manager$.errors_LST[[i]]$.id_CHR, manager$.errors_LST[[i]]$repr(), manager$.errors_LST[[i]]$.status_CHR, manager$.errors_LST[[i]]$key(), FALSE)
 				}
-				print(400)
 				listwidget$reloadView()
-				print(500)
 				# show data
 				tmp=manager$getActiveGroupsData()
 				dtwidget$render(tmp$data)
