@@ -26,7 +26,12 @@ DATA_PREP=setRefClass("DATA_PREP",
 			.errors_LST<<-errors
 			.process_FUN<<-process
 		},
-		prepareData=function(inpDF) {		
+		prepareData=function(inpDF) {
+			if (anyDuplicated(names(inpDF))>0)
+				setnames(
+					inpDF, 
+					replace(names(inpDF), which(duplicated(names(inpDF))), paste0(names(inpDF)[which(duplicated(names(inpDF)))],'1'))
+				)
 			if (!identical(sort(names(inpDF)),sort(names(.column_classes_LST)))) {
 				cat('column names in file are not recognised:')
 				cat('input file has extra columns:', names(inpDF)[which(!names(inpDF) %in% names(.column_classes_LST))], '\n')
@@ -95,21 +100,15 @@ MANAGER=setRefClass("MANAGER",
 		
 		#### disk interface methods
 		loadProjectDataFromFile=function() {
-			print(401.1)
 			currFILES=dir(file.path("raw", .activeProjectName_CHR, .activeWeekNumber_CHR, .activeGroupColor_CHR), '^.*.csv$', ignore.case=TRUE, full.names=TRUE)
 			if (length(currFILES)>0) {
-				print(401.2)
 				.dataPrep<<-get(.activeProjectName_CHR)
-				print(401.3)
 				.fullProjectData_DF<<-.dataPrep$prepareData(as.data.table(rbind.fill(llply(currFILES,fread))))
 				return(TRUE)
 			} else {
-				print(401.6)
 				.fullProjectData_DF<<-data.table(0)
-				print(401.7)
 				return(FALSE)
 			}
-			print(401.8)
 		},
 		saveDataToFile=function() {
 			# init
@@ -214,25 +213,18 @@ MANAGER=setRefClass("MANAGER",
 		#### error handling methods
 		scanDataForErrors=function() {
 			# tests
-			print(201)
 			tmp=laply(.dataPrep$.errors_LST, function(x) {
 				return(x$.column_CHR)
 			}) 
-			print(202)
 			if (any(!tmp %in% names(.activeGroupData_DF))) {
 				cat('project file incorrect; missing columns:')
 				print(tmp[!tmp %in% names(.activeGroupData_DF)])
 			}
-			print(203)
-			
 			# main proc
-			print(204)
 			tempErrors=.dataPrep$scanForErrors(.activeGroupData_DF) %>% unlist(recursive=TRUE, use.names=FALSE)
-			print(205)
 			if (length(tempErrors)>0) {
 				.errors_LST[laply(tempErrors, function(x){return(x$.id_CHR)})]<<-tempErrors
 			}
-			print(206)
 		},
 		scanCellForErrors=function(row, col, includeIgnored=FALSE) {
 			# init
@@ -525,9 +517,14 @@ ERROR_TEMPLATE.TRUNCATED=function(column_name) {
 	}))
 }
 
-ERROR_TEMPLATE.PERCENT=function(column_name) {
+ERROR_TEMPLATE.PERCENT=function(column_name, allowNA=FALSE) {
 	return(ERROR_GENERATOR$new(id, "Invalid percent value", column_name, "Cell value should be between 0-1.\nChange the value in this cell.", function(inpDF) {
-		rows=which(is.na(inpDF[[column_name]]) || inpDF[[column_name]]<0 || inpDF[[column_name]]>1)
+		if (!allowNA) {
+			rows=which(is.na(inpDF[[column_name]]) || inpDF[[column_name]]<0 || inpDF[[column_name]]>1)
+		} else {
+			vals=replace(inpDF[[column_name]], which(is.na(inpDF[[column_name]])), 0.5)
+			rows=which(vals<0 || vals>1)
+		}
 		return(data.frame(row=rows, col=rep(match(column_name, names(inpDF)), length(rows))))
 	}))
 }

@@ -48,7 +48,10 @@ is.outlier=function(x) {
 	return(2<abs((x-mean(x,na.rm=TRUE))/sd(x,na.rm=TRUE)))
 }
 
-extractValue=function(inpDF, refCol, refValue, extractCol) {
-	return(last(inpDF[[extractCol]][which(inpDF[[refCol]]==refValue)]))
+extractValue=function(inpDF, refCol, refValue, extractCol, default=as(NA, class(inpDF[[extractCol]]))) {
+	return(last(inpDF[[extractCol]][which(inpDF[[refCol]]==refValue)], default=default))
 }
 
+combineMissing=function(x,y) {
+	replace(x, which(is.na(x)), y[which(is.na(x))]) %>% return()
+}
