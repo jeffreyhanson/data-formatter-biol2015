@@ -29,7 +29,9 @@ Vegetation_Assessment=DATA_PREP$new(
 		'Syncarpia'="character"
 	),
 	format=function(inpDF) {
-		setnames(inpDF, names(inpDF), c('Date','Time','Group','Quadrat size','Vegetation type','data entry','Quadrat #','Tallest tree','Foliage cover','Ground cover','Litter depth','DBH','Small trees','Latitude','Longitude','Shrub size','DBH>10','Acacia','Angophora','Araucaria','Banksia','Callitris','Casuarina','Eucalyptus','Lophostemon','Melaleuca','Syncarpia'))
+		setnames(inpDF, names(inpDF), c('Date','Time','Group','Quadrat size','Vegetation type','data entry','Quadrat #','Tallest tree','Foliage cover','Ground cover','Litter depth','Tree Species DBH','Small trees','Latitude','Longitude','Shrub size','Tree Species Name','Acacia','Angophora','Araucaria','Banksia','Callitris','Casuarina','Eucalyptus','Lophostemon','Melaleuca','Syncarpia'))
+		
+		assign('inpDF', inpDF, envir=globalenv())
 		
 		if (all(!is.na(inpDF$Longitude)))
 			inpDF[,Longitude:=na.locf(Longitude)]
@@ -39,7 +41,7 @@ Vegetation_Assessment=DATA_PREP$new(
 
 		inpDF[,`Foliage cover`:=`Foliage cover`/100]
 		inpDF[,`Ground cover`:=`Ground cover`/100]
-
+		
 		inpDF[,`Acacia Dominant`:=ifelse(is.blank(Acacia),0,1),by=list(`Group`, `Quadrat size`, `Vegetation type`)]
 		inpDF[,`Angophora Dominant`:=ifelse(is.blank(Angophora),0,1),by=list(`Group`, `Quadrat size`, `Vegetation type`)]
 		inpDF[,`Araucaria Dominant`:=ifelse(is.blank(Araucaria),0,1),by=list(`Group`, `Quadrat size`, `Vegetation type`)]
@@ -50,24 +52,14 @@ Vegetation_Assessment=DATA_PREP$new(
 		inpDF[,`Lophostemon Dominant`:=ifelse(is.blank(Lophostemon),0,1),by=list(`Group`, `Quadrat size`, `Vegetation type`)]
 		inpDF[,`Melaleuca Dominant`:=ifelse(is.blank(Melaleuca),0,1),by=list(`Group`, `Quadrat size`, `Vegetation type`)]
 		inpDF[,`Syncarpia Dominant`:=ifelse(is.blank(Syncarpia),0,1),by=list(`Group`, `Quadrat size`, `Vegetation type`)]
-		
-		inpDF[,`Acacia DBH>10cm`:=extractValue(inpDF=.SD, refCol='DBH>10', refValue='Acacia', extractCol='DBH'),by=list(`Group`, `Quadrat size`, `Vegetation type`)]
-		inpDF[,`Angophora DBH>10cm`:=extractValue(inpDF=.SD, refCol='DBH>10', refValue='Angophora', extractCol='DBH'),by=list(`Group`, `Quadrat size`, `Vegetation type`)]
-		inpDF[,`Araucaria DBH>10cm`:=extractValue(inpDF=.SD, refCol='DBH>10', refValue='Araucaria', extractCol='DBH'),by=list(`Group`, `Quadrat size`, `Vegetation type`)]
-		inpDF[,`Banksia DBH>10cm`:=extractValue(inpDF=.SD, refCol='DBH>10', refValue='Banksia', extractCol='DBH'),by=list(`Group`, `Quadrat size`, `Vegetation type`)]
-		inpDF[,`Callitris DBH>10cm`:=extractValue(inpDF=.SD, refCol='DBH>10', refValue='Callitris', extractCol='DBH'),by=list(`Group`, `Quadrat size`, `Vegetation type`)]
-		inpDF[,`Casuarina DBH>10cm`:=extractValue(inpDF=.SD, refCol='DBH>10', refValue='Casuarina', extractCol='DBH'),by=list(`Group`, `Quadrat size`, `Vegetation type`)]
-		inpDF[,`Eucalyptus DBH>10cm`:=extractValue(inpDF=.SD, refCol='DBH>10', refValue='Eucalyptus', extractCol='DBH'),by=list(`Group`, `Quadrat size`, `Vegetation type`)]
-		inpDF[,`Lophostemon DBH>10cm`:=extractValue(inpDF=.SD, refCol='DBH>10', refValue='Lophostemon', extractCol='DBH'),by=list(`Group`, `Quadrat size`, `Vegetation type`)]
-		inpDF[,`Melaleuca DBH>10cm`:=extractValue(inpDF=.SD, refCol='DBH>10', refValue='Melaleuca', extractCol='DBH'),by=list(`Group`, `Quadrat size`, `Vegetation type`)]
-		inpDF[,`Syncarpia DBH>10cm`:=extractValue(inpDF=.SD, refCol='DBH>10', refValue='Syncarpia', extractCol='DBH'),by=list(`Group`, `Quadrat size`, `Vegetation type`)]
-		
+				
 		inpDF[,`Tallest tree`:=ifelse(all(is.na(`Tallest tree`)),as.numeric(NA),last(na.omit(`Tallest tree`))),by=list(`Group`, `Quadrat size`, `Vegetation type`)]
 		inpDF[['Shrub size']][which(nchar(inpDF[['Shrub size']])==0)]=NA
 		inpDF[,`Shrub size`:=ifelse(all(is.na(`Shrub size`)),as.character(NA),last(na.omit(`Shrub size`))),by=list(`Group`, `Quadrat size`, `Vegetation type`)]
-
+		inpDF[['Quadrat #']][which(inpDF[['data entry']]=='DBH when trunk >10cms')]=0
+		
 		inpDF %>% 
-		filter(`data entry`=='Vegetation Assessment') %>%
+		filter(`data entry` %in% c('Vegetation Assessment','DBH when trunk >10cms')) %>%
 		select(
 			Date,
 			Time,
@@ -77,12 +69,15 @@ Vegetation_Assessment=DATA_PREP$new(
 			`Quadrat size`,
 			`Vegetation type`,
 			`Quadrat #`,
+
 			`Tallest tree`,
 			`Foliage cover`,
 			`Ground cover`,
 			`Litter depth`,
 			`Small trees`,
 			`Shrub size`,
+			`Tree Species Name`,
+			`Tree Species DBH`,
 		
 			`Acacia Dominant`,
 			`Angophora Dominant`,
@@ -93,18 +88,8 @@ Vegetation_Assessment=DATA_PREP$new(
 			`Eucalyptus Dominant`,
 			`Lophostemon Dominant`,
 			`Melaleuca Dominant`,
-			`Syncarpia Dominant`,
+			`Syncarpia Dominant`
 
-			`Acacia DBH>10cm`,
-			`Angophora DBH>10cm`,
-			`Araucaria DBH>10cm`,
-			`Banksia DBH>10cm`,
-			`Callitris DBH>10cm`,
-			`Casuarina DBH>10cm`,
-			`Eucalyptus DBH>10cm`,
-			`Lophostemon DBH>10cm`,
-			`Melaleuca DBH>10cm`,
-			`Syncarpia DBH>10cm`
 		) %>% return()
 	},
 	errors=list(
@@ -137,40 +122,61 @@ Vegetation_Assessment=DATA_PREP$new(
 		ERROR_TEMPLATE.BINARY('Melaleuca Dominant'),
 		ERROR_TEMPLATE.BINARY('Syncarpia Dominant'),
 	
-		ERROR_TEMPLATE.TRUNCATED('Acacia DBH>10cm'),
-		ERROR_TEMPLATE.OUTLIER('Acacia DBH>10cm'),
-
-		ERROR_TEMPLATE.TRUNCATED('Angophora DBH>10cm'),
-		ERROR_TEMPLATE.OUTLIER('Angophora DBH>10cm'),
-		
-		ERROR_TEMPLATE.TRUNCATED('Araucaria DBH>10cm'),
-		ERROR_TEMPLATE.OUTLIER('Araucaria DBH>10cm'),
-		
-		ERROR_TEMPLATE.TRUNCATED('Banksia DBH>10cm'),
-		ERROR_TEMPLATE.OUTLIER('Banksia DBH>10cm'),
-
-		ERROR_TEMPLATE.TRUNCATED('Callitris DBH>10cm'),
-		ERROR_TEMPLATE.OUTLIER('Callitris DBH>10cm'),
-		
-		ERROR_TEMPLATE.TRUNCATED('Casuarina DBH>10cm'),
-		ERROR_TEMPLATE.OUTLIER('Casuarina DBH>10cm'),
-		
-		ERROR_TEMPLATE.TRUNCATED('Eucalyptus DBH>10cm'),
-		ERROR_TEMPLATE.OUTLIER('Eucalyptus DBH>10cm'),
-		
-		ERROR_TEMPLATE.TRUNCATED('Lophostemon DBH>10cm'),
-		ERROR_TEMPLATE.OUTLIER('Lophostemon DBH>10cm'),
-		
-		ERROR_TEMPLATE.TRUNCATED('Melaleuca DBH>10cm'),
-		ERROR_TEMPLATE.OUTLIER('Melaleuca DBH>10cm'),
-		
-		ERROR_TEMPLATE.TRUNCATED('Syncarpia DBH>10cm'),
-		ERROR_TEMPLATE.OUTLIER('Syncarpia DBH>10cm')
-		
+		ERROR_TEMPLATE.TRUNCATED('Tree Species DBH'),
+		ERROR_TEMPLATE.OUTLIER('Tree Species DBH')
 	),
 	process=function(inpDF, ...) {
+		# remove rows to omit
 		if (exists('omitRows'))
 			inpDF=inpDF[!omitRows,]
+			
+		assign('inpDF', inpDF, envir=globalenv())
+		
+		## calculate metrics
+		# initial calcs
+		inpDF$area=as.numeric(sapply(strsplit(inpDF[['Quadrat size']], 'x'), '[[', 1)) * as.numeric(gsub('m', '', sapply(strsplit(inpDF[['Quadrat size']], 'x'), '[[', 2)))
+		summaryDF=filter(inpDF, `Quadrat #`==0)[,
+			list(
+					`Basal Area`=sum(`Tree Species DBH`/12.56),
+					`Frequency`=length(`Tree Species DBH`),
+					`Density`=length(`Tree Species DBH`)/first(area)
+			),
+			by=list(`Group`, `Tree Species Name`, `Vegetation type`)
+		]
+		
+		# relative calcs
+		summaryDF %<>% mutate(
+			`Relative Basal Area`=round(`Basal Area`/sum(`Basal Area`),2),
+			`Relative Frequency`=round(`Frequency`/sum(`Frequency`),2),
+			`Relative Density`=round(`Density`/sum(`Density`),2),
+			`Relative Importance`=round((`Relative Basal Area`+`Relative Frequency`+`Relative Density`)/3,2)
+		)
+		
+		# pad in missing species
+		allnames=c("Acacia","Angophora","Araucaria","Banksia","Callitris","Casuarina","Eucalyptus","Lophostemon","Melaleuca","Syncarpia","Unknown")
+		missDF = summaryDF[,.(`Tree Species Name`=allnames[which(!allnames %in% `Tree Species Name`)]), by=list(`Group`, `Vegetation type`)] 
+		missDF %<>% mutate(
+			`Basal Area`=0,
+			`Frequency`=0,
+			`Density`=0,
+			`Relative Basal Area`=0,
+			`Relative Frequency`=0,
+			`Relative Density`=0,
+			`Relative Importance`=0
+		)
+		
+		# compile summaryDF
+		summaryDF %<>% rbind(missDF) %>% mutate(
+			Date=first(inpDF$Date),
+			Time=first(inpDF$Time),
+			Longitude=first(inpDF$Longitude),
+			Latitude=first(inpDF$Latitude),
+			`Quadrat size`=first(inpDF[['Quadrat size']])
+			`Quadrat #`=0
+		)
+		
+		# compile and return final data.table
+		inpDF %<>% filter(`Quadrat #` > 0) %>% rbind(summaryDF, fill=TRUE)
 		return(inpDF)
 	}
 )

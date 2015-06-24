@@ -1,18 +1,7 @@
 ## Run locally
-test=function(){shiny::runApp("C:/Users/jhanson/Documents/GitHub/data-formatter-biol2015")}
-test=function(){shiny::runApp("C:/Users/jeff/Documents/GitHub/data-formatter-biol2015")}
-test=function(){shiny::runApp("/home/jeff/Github/data-formatter-biol2015")}
+test=function(){shiny::runApp(file.path(Sys.getenv('HOME'), 'github', 'data-formatter-biol2015'))}
 
 ## Deploy online to ShinyApps
 shinyapps::deployApp("C:/Users/jeff/Documents/GitHub/data-formatter-biol2015")
 shinyapps::deployApp("/home/jeff/Github/data-formatter-biol2015")
-
-
-## debugging
-# test2=function() {
-# 	source('/home/jeff/Github/data-formatter-biol2015/projects/Mangroves_Community.R')
-# 	calculate_PCQ_metrics(inpDF, columns=c('Transect','Zone')) %>% 
-# 		filter(first(key)) %>%
-# 		assign(x='testDF', envir=globalenv())
-# }
 
