@@ -171,7 +171,7 @@ Vegetation_Assessment=DATA_PREP$new(
 			Time=first(inpDF$Time),
 			Longitude=first(inpDF$Longitude),
 			Latitude=first(inpDF$Latitude),
-			`Quadrat size`=first(inpDF[['Quadrat size']])
+			`Quadrat size`=first(inpDF[['Quadrat size']]),
 			`Quadrat #`=0
 		)
 		
