@@ -1,9 +1,10 @@
+install.packages('zoo')
+install.packages('testthat')
+install.packages("devtools")
 install.packages("shiny")
-install_github("ebailey78/shinyBS")
-install_github("trestletech/shinyTable")
+devtools::install_github("ebailey78/shinyBS")
+devtools::install_github("trestletech/shinyTable")
 install.packages("data.table")
 install.packages("plyr")
 install.packages("dplyr")
-install.packages('testthat')
-
 

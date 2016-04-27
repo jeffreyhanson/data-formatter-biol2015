@@ -5,13 +5,34 @@ make_dir_FUN=function(dir_CHR) {
 }
 
 init_dir_FUN=function() {
-	sapply(apply(expand.grid(week_numbers_VCHR,project_names_VCHR,group_colors_VCHR,c("raw","clean","formatted","compiled")),1,paste,collapse="/"), make_dir_FUN)
+	# create raw, clean, formatted dirs
+	sapply(c('raw', 'cleaned', 'formatted'), function(x) {	
+		sapply(apply(expand.grid(x, project_names_VCHR, week_numbers_VCHR, group_colors_VCHR),1,paste,collapse='/'), make_dir_FUN)
+	})
+	
+	# create compiled dirs
+	sapply(apply(expand.grid('compiled', project_names_VCHR, week_numbers_VCHR),1,paste,collapse='/'), make_dir_FUN)
+	
+	# create master dirs
+	sapply(apply(expand.grid('master', project_names_VCHR),1,paste,collapse='/'), make_dir_FUN)
+	
 }
 
 ### Miscellaneous functions
 is.empty=function(x) {
 	return(length(x)==0)
 }
+
+is.blank=function(x) {
+	if (all(is.na(x)))
+		return(TRUE)
+	if (is.character(x)) {
+		return(all(nchar(x)==0))
+	} else {
+		return(FALSE)
+	}
+}
+
 
 convert2bool=function(x) {
 	x=as.logical(x)
@@ -20,10 +41,33 @@ convert2bool=function(x) {
 }
 
 phrase_FUN=function(x, last_word="or") {
-	x=paste0('"',x,'"')
 	return(paste0(paste(x[seq_len(length(x)-1)], collapse=", "), ", ", last_word, " ", x[length(x)]))
 }
 
 is.outlier=function(x) {
 	return(2<abs((x-mean(x,na.rm=TRUE))/sd(x,na.rm=TRUE)))
 }
+
+extractValue=function(inpDF, refCol, refValue, extractCol, default=as(NA, class(inpDF[[extractCol]]))) {
+	return(last(inpDF[[extractCol]][which(inpDF[[refCol]]==refValue)], default=default))
+}
+
+combineMissing=function(x,y) {
+	replace(x, which(is.na(x)), y[which(is.na(x))]) %>% return()
+}
+
+
+na.pad=function(i) {
+	y=na.locf(i)
+	return(c(y, rep(NA, length(i)-length(y))))
+}
+
+first.not.na=function(i) {
+	z=i[which(!is.na(i))]
+	if (length(z)>0)
+		return(rep(first(z), length(i)))
+	return(rep(as(NA,class(i)), length(i)))
+}
+
+
+

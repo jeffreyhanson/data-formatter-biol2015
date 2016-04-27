@@ -39,9 +39,11 @@ createList<-function(session, outputId) {
   structure(c(
 	stub(reloadView()),
 	stub(setView(status,force_reset)),
-	stub(addItem(id, item, status, force_reset)),
-	stub(updateItem(id, item, status, force_reset)),
-	stub(removeItem(id, force_reset))
+	stub(addItem(id, item, status, key, force_reset)),
+	stub(updateItem(id, item, status, key, force_reset)),
+	stub(removeItem(id, force_reset)),
+	stub(filterItems(ids, force_reset))
+	
   ), class = "list_widget")
 }
 
@@ -63,20 +65,20 @@ ListHtmlRepr=function(outputId, options=NULL) {
 				))
 			),
 			tags$div(id=outputId, class="list-widget-output",
-				tags$div(id=paste0(outputId,"_btns_div"), class="list-btns-div",
+				tags$div(id=paste0(outputId,"_btns_div"), class="list-btns-div center",
 					HTML('
 						<div class="btn-group" data-toggle="buttons">
 							<label class="btn btn-default">
-								<input id="status_all_BTN" type="radio" value="all" checked="checked" onchange=setListStatus(this.value) />All
+								<input id="status_all_BTN" name="status-buttons" type="radio" value="all" checked="checked" onchange="setListStatus(this.value)" />All
 							</label>
 							<label class="btn btn-default">
-								<input id="status_fixed_BTN" type="radio" value="fixed" onchange=setListStatus(this.value) />Fixed
+								<input id="status_fixed_BTN" name="status-buttons" type="radio" value="fixed" onchange="setListStatus(this.value)" />Fixed
 							</label>
 							<label class="btn btn-default">
-								<input id="status_ignored_BTN" type="radio" value="ignored" onchange=setListStatus(this.value) />Ignored
+								<input id="status_ignored_BTN" name="status-buttons" type="radio" value="ignored" onchange="setListStatus(this.value)" />Ignored
 							</label>
 							<label class="btn btn-default">
-								<input id="status_errors_BTN" type="radio" value="error" onchange=setListStatus(this.value) />Errors
+								<input id="status_errors_BTN" name="status-buttons" type="radio" value="error" onchange="setListStatus(this.value)" />Errors
 							</label>
 						</div> 
 					')
